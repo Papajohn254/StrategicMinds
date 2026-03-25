@@ -682,6 +682,8 @@ async function loadNotifications() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    const BASE_URL = "https://strategicminds-nnfe.onrender.com";
+
     const response = await fetch('/api/dashboard/summary', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
