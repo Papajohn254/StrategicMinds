@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms & Conditions — SmartInventory Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    body{ font-family: 'Poppins',sans-serif; margin:0; padding:0; background:#f9fbfd; color:#1b263b; }
+    .container{ max-width:1080px; margin:32px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.08); }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+    .top-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+    h1{ margin-bottom:14px; color:#2c5364; }
+    h2{ margin-top:24px; color:#1c4d73; }
+    p{ line-height:1.6; margin:10px 0; }
+    a{ color:#0d6efd; text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    .toplink{ display:inline-flex; align-items:center; }
+    .action-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 14px;
+      border:none;
+      border-radius:8px;
+      background:#2c5364;
+      color:#fff;
+      text-decoration:none;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:600;
+    }
+    .action-btn.secondary{ background:#e8eef5; color:#1b263b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="toplink" id="backLink" href="dashboard.html">← Back to Dashboard</a>
+      <div class="top-actions">
+        <a class="action-btn secondary" id="loginLink" href="index.html">Login</a>
+        <button class="action-btn" id="logoutButton" type="button" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div id="content">
+      <h1>Terms & Conditions</h1>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function getLegalBranchQuery() {
+      const branchId = localStorage.getItem('activeBranchId');
+      if (!branchId || branchId === 'all') return '';
+      return `?branch_id=${encodeURIComponent(branchId)}`;
+    }
+
+    function setupPageActions() {
+      const loggedIn = !!localStorage.getItem('token');
+      const backLink = document.getElementById('backLink');
+      const loginLink = document.getElementById('loginLink');
+      const logoutButton = document.getElementById('logoutButton');
+
+      if (loggedIn) {
+        backLink.href = 'dashboard.html';
+        loginLink.style.display = 'none';
+        logoutButton.style.display = 'inline-flex';
+      } else {
+        backLink.href = 'index.html';
+        backLink.textContent = '← Back to Login';
+        loginLink.style.display = 'inline-flex';
+        logoutButton.style.display = 'none';
+      }
+    }
+
+    async function loadTermsConditions() {
+      try {
+        const res = await fetch(`/api/legal/terms${getLegalBranchQuery()}`);
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status}`);
+        }
+        const content = await res.text();
+        document.getElementById('content').innerHTML = content;
+      } catch (error) {
+        console.error('Failed to load terms and conditions:', error);
+        document.getElementById('content').innerHTML = '<h1>Terms & Conditions</h1><p>Failed to load terms and conditions. Please try again later.</p>';
+      }
+    }
+
+    setupPageActions();
+    loadTermsConditions();
+  </script>
+</body>
+</html>

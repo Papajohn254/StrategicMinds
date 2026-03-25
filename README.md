@@ -1,0 +1,2 @@
+# inventory-management-system
+THIS A UNIVERSAL INVENTORY MANAGEMENT SYSTEM

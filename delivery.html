@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Portal - SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ef;
+  --ink:#0f172a;
+  --muted:#5b6770;
+  --surface:#ffffff;
+  --line:#e6e2dc;
+  --accent:#0ea5a4;
+  --accent-dark:#0f766e;
+  --accent-soft:#d7f5f2;
+  --danger:#ef4444;
+  --shadow:0 18px 45px rgba(15,23,42,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{min-height:100vh;display:flex;background:var(--bg);color:var(--ink);}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 12% 12%, #ffe7c4 0%, rgba(255,231,196,0) 45%),
+    radial-gradient(circle at 88% 8%, #c9f2ff 0%, rgba(201,242,255,0) 38%),
+    radial-gradient(circle at 80% 85%, #d7f5f2 0%, rgba(215,245,242,0) 50%);
+  z-index:-1;
+}
+.sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f4c5c 0%, #0b2f35 100%);color:white;padding:24px;display:flex;flex-direction:column;gap:24px;}
+.sidebar h2{font-size:20px;letter-spacing:0.5px;text-align:center;}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.sidebar ul li{padding:12px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s ease;}
+.sidebar ul li:hover{background:rgba(255,255,255,0.12);} 
+.sidebar ul li#navDelivery{background:rgba(255,255,255,0.18);} 
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:22px 30px;gap:16px;flex-wrap:wrap;}
+.topbar h3{font-size:24px;margin-bottom:4px;}
+.topbar p{color:var(--muted);font-size:14px;}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;}
+.topbar-right select{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;}
+.pill{background:var(--surface);padding:8px 14px;border-radius:999px;box-shadow:var(--shadow);font-size:13px;display:flex;gap:6px;align-items:center;}
+.user-badge{background:#0f172a;color:#fff;padding:8px 12px;border-radius:999px;font-size:12px;}
+
+.content{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:0 30px 30px;}
+.section{background:var(--surface);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);animation:fadeUp 0.45s ease both;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
+.section h4{font-size:16px;}
+
+.order-list{display:grid;gap:12px;max-height:560px;overflow:auto;padding-right:4px;}
+.order-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfbfa;display:grid;gap:8px;}
+.order-title{font-size:14px;font-weight:600;display:flex;justify-content:space-between;gap:8px;}
+.badge{background:var(--accent-soft);color:var(--accent-dark);font-size:10px;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.4px;}
+.order-meta{font-size:12px;color:var(--muted);display:grid;gap:4px;}
+.order-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.button{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:12px;}
+.button.primary{background:var(--accent);color:white;}
+.button.primary:hover{background:var(--accent-dark);} 
+.button.ghost{background:var(--accent-soft);color:var(--accent-dark);} 
+.button.danger{background:var(--danger);color:white;}
+
+input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:12px;}
+.empty{padding:14px;color:var(--muted);text-align:center;font-size:12px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:1100px){
+  .content{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .content{padding:0 20px 24px;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>SmartInventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">Shopfront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen</li>
+<li id="navMessages" onclick="nav('messages.html')">Messages</li>
+<li id="navDelivery" onclick="nav('delivery.html')">Delivery</li>
+<li onclick="logout()">Logout</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+  <div>
+    <h3>Delivery Portal</h3>
+    <p>Accept deliveries, update status, and confirm drop-offs.</p>
+  </div>
+  <div class="topbar-right">
+    <select id="branchSelect"></select>
+    <div class="pill user-badge" id="userBadge">Loading...</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="section">
+    <div class="section-head">
+      <h4>Available Orders</h4>
+      <button class="button ghost" onclick="loadAvailable()">Refresh</button>
+    </div>
+    <div id="availableList" class="order-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <h4>My Deliveries</h4>
+      <button class="button ghost" onclick="loadMine()">Refresh</button>
+    </div>
+    <div id="mineList" class="order-list"></div>
+  </div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","rider"]);
+initBranchSelector();
+
+const availableList = document.getElementById("availableList");
+const mineList = document.getElementById("mineList");
+
+function formatItems(items){
+  if(!items || !items.length) return "-";
+  return items.map(i => `${i.qty} x ${i.name}`).join(", ");
+}
+
+function formatOrderCard(order, actionsHtml){
+  const address = order.delivery_address || "Branch pickup";
+  const phone = order.delivery_phone || order.contact || "-";
+  const paymentStatus = order.payment_status || (order.paid_at ? "Paid" : "Pending");
+  const paymentLabel = `${paymentStatus}${order.payment_method ? ` (${order.payment_method})` : ""}`;
+  return `
+    <div class="order-card">
+      <div class="order-title">
+        <span>Order #${order.id}</span>
+        <span class="badge">${order.status || "Status"}</span>
+      </div>
+      <div class="order-meta">
+        <div><strong>Customer:</strong> ${order.customer_name || "Walk-in"}</div>
+        <div><strong>Contact:</strong> ${phone}</div>
+        <div><strong>Address:</strong> ${address}</div>
+        <div><strong>Items:</strong> ${formatItems(order.items)}</div>
+        <div><strong>Fee:</strong> ${formatKES(order.delivery_fee || 0)}</div>
+        <div><strong>Payment:</strong> ${paymentLabel}</div>
+      </div>
+      <div class="order-actions">${actionsHtml}</div>
+    </div>
+  `;
+}
+
+async function loadAvailable(){
+  const branchParam = getActiveBranchParam();
+  const res = await apiFetch(branchParam ? `/api/delivery/orders/available?branch_id=${branchParam}` : "/api/delivery/orders/available");
+  const orders = await res.json();
+  if(!orders.length){
+    availableList.innerHTML = '<div class="empty">No available orders.</div>';
+    return;
+  }
+  availableList.innerHTML = orders.map(order => {
+    const actions = `<button class="button primary" onclick="acceptOrder(${order.id})">Accept Delivery</button>`;
+    return formatOrderCard(order, actions);
+  }).join("");
+}
+
+async function loadMine(){
+  const res = await apiFetch("/api/delivery/orders/mine");
+  const orders = await res.json();
+  if(!orders.length){
+    mineList.innerHTML = '<div class="empty">No assigned deliveries yet.</div>';
+    return;
+  }
+  mineList.innerHTML = orders.map(order => {
+    const actions = `
+      <button class="button ghost" onclick="updateDeliveryStatus(${order.id}, 'Picked Up')">Picked Up</button>
+      <button class="button ghost" onclick="updateDeliveryStatus(${order.id}, 'On the Way')">On the Way</button>
+      <input type="text" id="otp-${order.id}" placeholder="OTP code">
+      <button class="button primary" onclick="confirmDelivery(${order.id})">Confirm Delivered</button>
+    `;
+    return formatOrderCard(order, actions);
+  }).join("");
+}
+
+async function acceptOrder(orderId){
+  const res = await apiFetch(`/api/delivery/orders/${orderId}/accept`, { method: "POST" });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Unable to accept order");
+    return;
+  }
+  await loadAvailable();
+  await loadMine();
+}
+
+async function updateDeliveryStatus(orderId, status){
+  const res = await apiFetch(`/api/delivery/orders/${orderId}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Status update failed");
+    return;
+  }
+  await loadMine();
+}
+
+async function confirmDelivery(orderId){
+  const otpInput = document.getElementById(`otp-${orderId}`);
+  const otp = otpInput ? otpInput.value.trim() : "";
+  const res = await apiFetch(`/api/delivery/orders/${orderId}/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ otp_code: otp })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Delivery confirmation failed");
+    return;
+  }
+  await loadMine();
+}
+
+loadAvailable();
+loadMine();
+</script>
+</body>
+</html>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages & Notifications - SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg:#f6f4ef;
+    --ink:#0f172a;
+    --muted:#5b6770;
+    --surface:#ffffff;
+    --line:#e6e2dc;
+    --accent:#0ea5a4;
+    --accent-dark:#0f766e;
+    --accent-soft:#d7f5f2;
+    --danger:#ef4444;
+    --shadow:0 18px 45px rgba(15,23,42,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{min-height:100vh;display:flex;background:var(--bg);color:var(--ink);}
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:
+        radial-gradient(circle at 12% 12%, #ffe7c4 0%, rgba(255,231,196,0) 45%),
+        radial-gradient(circle at 88% 8%, #c9f2ff 0%, rgba(201,242,255,0) 38%),
+        radial-gradient(circle at 80% 85%, #d7f5f2 0%, rgba(215,245,242,0) 50%);
+    z-index:-1;
+}
+.sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f4c5c 0%, #0b2f35 100%);color:white;padding:24px;display:flex;flex-direction:column;gap:24px;}
+.sidebar h2{font-size:20px;letter-spacing:0.5px;text-align:center;}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.sidebar ul li{padding:12px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s ease;}
+.sidebar ul li:hover{background:rgba(255,255,255,0.12);} 
+.sidebar ul li#navMessages{background:rgba(255,255,255,0.18);} 
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:22px 30px;gap:16px;flex-wrap:wrap;}
+.topbar h3{font-size:24px;margin-bottom:4px;}
+.topbar p{color:var(--muted);font-size:14px;}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;}
+.topbar-right select{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;}
+.pill{background:var(--surface);padding:8px 14px;border-radius:999px;box-shadow:var(--shadow);font-size:13px;display:flex;gap:6px;align-items:center;}
+.user-badge{background:#0f172a;color:#fff;padding:8px 12px;border-radius:999px;font-size:12px;}
+
+.content{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;padding:0 30px 30px;}
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0;}
+.section{background:var(--surface);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);animation:fadeUp 0.45s ease both;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
+.section h4{font-size:16px;}
+.muted{color:var(--muted);font-size:12px;}
+
+.messages-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;min-height:560px;}
+.thread-list{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.thread-search{display:flex;gap:8px;}
+.thread-search input{width:100%;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:#fbfbfa;font-size:13px;}
+.thread-items{display:grid;gap:10px;overflow:auto;max-height:520px;padding-right:4px;}
+.thread-card{border:1px solid var(--line);background:#fbfbfa;border-radius:14px;padding:10px 12px;cursor:pointer;display:grid;gap:6px;transition:all 0.2s ease;}
+.thread-card:hover{border-color:rgba(14,165,164,0.4);box-shadow:0 10px 20px rgba(15,23,42,0.08);} 
+.thread-card.active{border-color:var(--accent);background:#f1fbfa;}
+.thread-title{font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.thread-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;}
+.badge{background:var(--danger);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;}
+.type-pill{background:var(--accent-soft);color:var(--accent-dark);font-size:10px;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.5px;}
+
+.chat-view{display:flex;flex-direction:column;gap:12px;min-width:0;}
+.chat-header{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+.chat-title{font-weight:600;font-size:14px;}
+.chat-meta{font-size:11px;color:var(--muted);} 
+.message-search{display:flex;gap:8px;}
+.message-search input{width:100%;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:#fbfbfa;font-size:12px;}
+
+.chat-body{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;max-height:380px;padding-right:4px;}
+.msg{max-width:72%;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.4;display:grid;gap:6px;}
+.msg.me{align-self:flex-end;background:var(--accent);color:white;border-bottom-right-radius:4px;}
+.msg.other{align-self:flex-start;background:#f3f4f6;color:#0f172a;border-bottom-left-radius:4px;}
+.msg-meta{font-size:10px;opacity:0.8;display:flex;justify-content:space-between;gap:8px;}
+.msg-attachments{display:grid;gap:6px;}
+.attachment{display:flex;align-items:center;gap:8px;font-size:11px;color:inherit;word-break:break-all;}
+.attachment img{max-width:160px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);} 
+
+.chat-compose{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px;}
+.chat-compose textarea{width:100%;min-height:64px;max-height:140px;border-radius:12px;border:1px solid var(--line);padding:10px 12px;resize:vertical;font-size:13px;background:#fbfbfa;}
+.compose-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.compose-actions input[type="file"]{font-size:12px;}
+.attachment-list{display:flex;flex-wrap:wrap;gap:8px;}
+.attachment-chip{background:#eef2f5;border-radius:999px;padding:4px 8px;font-size:11px;display:flex;align-items:center;gap:6px;}
+.attachment-chip button{border:none;background:transparent;cursor:pointer;font-size:12px;}
+
+.button{padding:10px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:600;transition:all 0.2s ease;font-size:13px;}
+.button.primary{background:var(--accent);color:white;}
+.button.primary:hover{background:var(--accent-dark);} 
+.button.ghost{background:var(--accent-soft);color:var(--accent-dark);} 
+.button.ghost:hover{filter:brightness(0.98);} 
+.button.small{padding:8px 10px;font-size:12px;border-radius:999px;}
+
+.notification-list{display:grid;gap:10px;max-height:380px;overflow:auto;padding-right:4px;}
+.notification-card{border:1px solid var(--line);background:#fbfbfa;border-radius:14px;padding:10px 12px;display:grid;gap:6px;cursor:pointer;}
+.notification-card.unread{border-color:rgba(14,165,164,0.4);background:#f1fbfa;}
+.notification-title{font-size:12px;font-weight:600;display:flex;justify-content:space-between;gap:6px;}
+.notification-meta{font-size:11px;color:var(--muted);} 
+
+.form-grid{display:grid;gap:10px;}
+.form-grid input,.form-grid select,.form-grid textarea{
+    width:100%;padding:9px 12px;border-radius:12px;border:1px solid var(--line);
+    background:#fbfbfa;font-size:13px;outline:none;
+}
+.form-grid textarea{min-height:90px;resize:vertical;}
+
+.modal{position:fixed;inset:0;background:rgba(15,23,42,0.55);display:none;align-items:center;justify-content:center;z-index:20;}
+.modal.open{display:flex;}
+.modal-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);width:92%;max-width:520px;padding:16px;display:grid;gap:12px;}
+.modal-card h4{font-size:16px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;}
+
+.empty{padding:16px;color:var(--muted);text-align:center;font-size:12px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:1200px){
+    .content{grid-template-columns:1fr;}
+}
+@media(max-width:1024px){
+    .messages-layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .content{padding:0 20px 24px;}
+    .chat-body{max-height:300px;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>SmartInventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">Shopfront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Referrals</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navUsers" onclick="nav('users.html')">Users</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navMessages" onclick="nav('messages.html')">Messages</li>
+<li onclick="logout()">Logout</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>Messages & Notifications</h3>
+<p>Internal chat, alerts, and operational updates across teams.</p>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div class="pill user-badge" id="userBadge">Loading...</div>
+</div>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <h4>Internal Messaging</h4>
+          <div class="muted">Direct, group, and broadcast conversations with searchable history.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="button ghost" onclick="openThreadModal()">New Chat</button>
+        </div>
+      </div>
+      <div class="messages-layout">
+        <div class="thread-list">
+          <div class="thread-search">
+            <input id="threadSearch" type="text" placeholder="Search conversations...">
+          </div>
+          <div class="thread-items" id="threadItems"></div>
+        </div>
+        <div class="chat-view">
+          <div class="chat-header">
+            <div>
+              <div class="chat-title" id="chatTitle">Select a conversation</div>
+              <div class="chat-meta" id="chatMeta">Start a new chat or open an existing thread.</div>
+            </div>
+            <div class="message-search" style="min-width:200px;">
+              <input id="messageSearch" type="text" placeholder="Search messages...">
+            </div>
+          </div>
+          <div class="chat-body" id="chatMessages">
+            <div class="empty">No conversation selected.</div>
+          </div>
+          <div class="chat-compose">
+            <textarea id="messageInput" placeholder="Type a message..."></textarea>
+            <div class="compose-actions">
+              <input id="attachmentInput" type="file" multiple>
+              <input id="attachmentLink" type="text" placeholder="Paste attachment link (optional)" style="flex:1;min-width:180px;">
+              <button class="button small ghost" onclick="addAttachmentLink()">Add Link</button>
+              <button class="button primary" onclick="sendMessage()">Send</button>
+            </div>
+            <div class="attachment-list" id="attachmentList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section" id="notificationsSection">
+      <div class="section-head">
+        <div>
+          <h4>Notifications</h4>
+          <div class="muted">Inventory, sales, staff, and system alerts in real time.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="notificationFilter">
+            <option value="unread">Unread</option>
+            <option value="all">All</option>
+          </select>
+          <button class="button small ghost" onclick="markAllNotifications()">Mark all read</button>
+        </div>
+      </div>
+      <div class="notification-list" id="notificationList"></div>
+    </div>
+
+    <div class="section" data-roles="admin,manager">
+      <div class="section-head">
+        <div>
+          <h4>Send Notification</h4>
+          <div class="muted">Broadcast alerts to a user or role.</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <select id="notifyType">
+          <option value="Inventory">Inventory</option>
+          <option value="Sales">Sales</option>
+          <option value="Staff">Staff</option>
+          <option value="System">System</option>
+        </select>
+        <select id="notifyTargetType" onchange="toggleNotifyTarget()">
+          <option value="user">Specific User</option>
+          <option value="role">By Role</option>
+        </select>
+        <select id="notifyUser"></select>
+        <select id="notifyRole" style="display:none;">
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="staff">Staff</option>
+          <option value="cashier">Cashier</option>
+          <option value="storekeeper">Storekeeper</option>
+        </select>
+        <select id="notifyBranch">
+          <option value="">All Branches</option>
+        </select>
+        <input id="notifyTitle" type="text" placeholder="Title (optional)">
+        <textarea id="notifyMessage" placeholder="Notification message"></textarea>
+        <input id="notifyLink" type="text" placeholder="Link (optional, e.g. inventory.html)">
+        <button class="button primary" onclick="sendNotification()">Send Notification</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal" id="threadModal">
+  <div class="modal-card">
+    <h4>Start a New Conversation</h4>
+    <div class="form-grid">
+      <select id="threadType" onchange="toggleThreadType()">
+        <option value="direct">Direct Message</option>
+        <option value="group">Group Chat</option>
+        <option value="broadcast">Admin Broadcast</option>
+      </select>
+      <input id="groupName" type="text" placeholder="Group name" style="display:none;">
+      <select id="directParticipant"></select>
+      <select id="groupParticipants" multiple size="6" style="display:none;"></select>
+      <div class="muted" id="broadcastNote" style="display:none;">Broadcasts are visible to all staff. Only admins can post.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="button ghost" onclick="closeThreadModal()">Cancel</button>
+      <button class="button primary" onclick="createThread()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","staff","cashier","storekeeper","rider"]);
+initBranchSelector();
+applyRoleVisibility(currentUser ? currentUser.role : "");
+if(currentUser && currentUser.role !== "admin"){
+  const option = document.querySelector("#threadType option[value=\"broadcast\"]");
+  if(option) option.style.display = "none";
+}
+
+let users = [];
+let branches = [];
+let threads = [];
+let activeThreadId = null;
+let activeThread = null;
+let messages = [];
+let pendingAttachments = [];
+let pollHandle = null;
+
+const threadItems = document.getElementById("threadItems");
+const chatMessages = document.getElementById("chatMessages");
+const chatTitle = document.getElementById("chatTitle");
+const chatMeta = document.getElementById("chatMeta");
+const threadSearch = document.getElementById("threadSearch");
+const messageSearch = document.getElementById("messageSearch");
+
+threadSearch.addEventListener("input", () => renderThreadList());
+messageSearch.addEventListener("input", () => renderMessages());
+
+document.getElementById("attachmentInput").addEventListener("change", handleAttachmentFiles);
+
+function applyRoleVisibility(role){
+  document.querySelectorAll("[data-roles]").forEach(el => {
+    const roles = el.getAttribute("data-roles").split(",");
+    if(!roles.includes(role)) el.style.display = "none";
+  });
+}
+
+async function bootstrap(){
+  await Promise.all([loadUsers(), loadBranches(), loadThreads(), loadNotifications()]);
+  startPolling();
+}
+
+async function loadUsers(){
+  const res = await apiFetch("/api/users/lookup");
+  users = await res.json();
+  renderUserOptions();
+}
+
+function renderUserOptions(){
+  const directSelect = document.getElementById("directParticipant");
+  const groupSelect = document.getElementById("groupParticipants");
+  const notifyUser = document.getElementById("notifyUser");
+  directSelect.innerHTML = "";
+  groupSelect.innerHTML = "";
+  notifyUser.innerHTML = "";
+  users.forEach(u => {
+    const label = `${u.name} (${u.role})`;
+    const opt1 = document.createElement("option");
+    opt1.value = u.id;
+    opt1.textContent = label;
+    directSelect.appendChild(opt1);
+    const opt2 = document.createElement("option");
+    opt2.value = u.id;
+    opt2.textContent = label;
+    groupSelect.appendChild(opt2);
+    const opt3 = document.createElement("option");
+    opt3.value = u.id;
+    opt3.textContent = label;
+    notifyUser.appendChild(opt3);
+  });
+}
+
+async function loadBranches(){
+  const res = await apiFetch("/api/branches");
+  branches = await res.json();
+  const notifyBranch = document.getElementById("notifyBranch");
+  notifyBranch.innerHTML = '<option value="">All Branches</option>';
+  branches.forEach(b => {
+    const opt = document.createElement("option");
+    opt.value = b.id;
+    opt.textContent = b.name;
+    notifyBranch.appendChild(opt);
+  });
+}
+
+async function loadThreads(){
+  const res = await apiFetch("/api/messages/threads");
+  threads = await res.json();
+  renderThreadList();
+  if(!activeThreadId && threads.length){
+    selectThread(threads[0].id);
+  }
+}
+
+function renderThreadList(){
+  const query = (threadSearch.value || "").toLowerCase();
+  threadItems.innerHTML = "";
+  const filtered = threads.filter(t => {
+    const name = (t.display_name || t.name || "conversation").toLowerCase();
+    const msg = (t.last_message || "").toLowerCase();
+    return !query || name.includes(query) || msg.includes(query);
+  });
+  if(filtered.length === 0){
+    threadItems.innerHTML = '<div class="empty">No conversations found.</div>';
+    return;
+  }
+  filtered.forEach(t => {
+    const card = document.createElement("div");
+    card.className = `thread-card ${activeThreadId === t.id ? "active" : ""}`;
+    const label = t.display_name || t.name || "Conversation";
+    let lastMsg = "No messages yet";
+    if(t.last_message !== null && t.last_message !== undefined){
+      const trimmed = String(t.last_message).trim();
+      lastMsg = trimmed.length ? trimmed.slice(0, 60) : "Attachment";
+    }
+    const time = t.last_at ? new Date(t.last_at).toLocaleString() : "";
+    const typeLabel = t.type ? `<span class="type-pill">${t.type}</span>` : "";
+    const unread = t.unread_count > 0 ? `<span class="badge">${t.unread_count}</span>` : "";
+    card.innerHTML = `
+      <div class="thread-title">
+        <span>${label}</span>
+        <span style="display:flex;gap:6px;align-items:center;">${typeLabel}${unread}</span>
+      </div>
+      <div class="thread-meta">
+        <span>${lastMsg}</span>
+        <span>${time}</span>
+      </div>
+    `;
+    card.addEventListener("click", () => selectThread(t.id));
+    threadItems.appendChild(card);
+  });
+}
+
+async function selectThread(threadId){
+  activeThreadId = threadId;
+  await loadThreadMessages(threadId, true);
+  renderThreadList();
+}
+
+async function loadThreadMessages(threadId, markRead){
+  const res = await apiFetch(`/api/messages/threads/${threadId}`);
+  const payload = await res.json();
+  activeThread = payload.thread;
+  messages = payload.messages || [];
+  const threadMeta = threads.find(t => Number(t.id) === Number(threadId));
+  chatTitle.textContent = (threadMeta && threadMeta.display_name) || payload.thread.name || (payload.thread.type === "broadcast" ? "Company Broadcast" : "Conversation");
+  chatMeta.textContent = payload.thread.type === "broadcast" ? "Broadcast channel" : "Messages are visible to members only";
+  renderMessages();
+  if(markRead) await markThreadRead(threadId);
+}
+
+async function markThreadRead(threadId){
+  try{
+    await apiFetch(`/api/messages/threads/${threadId}/read`, { method: "POST" });
+    await loadThreads();
+  }catch(err){
+    // ignore
+  }
+}
+
+function parseAttachments(raw){
+  if(!raw) return [];
+  try{
+    return JSON.parse(raw);
+  }catch(err){
+    return [];
+  }
+}
+
+function renderMessages(){
+  const query = (messageSearch.value || "").toLowerCase();
+  chatMessages.innerHTML = "";
+  const filtered = messages.filter(m => {
+    if(!query) return true;
+    return (m.content || "").toLowerCase().includes(query) || (m.sender_name || "").toLowerCase().includes(query);
+  });
+  if(filtered.length === 0){
+    chatMessages.innerHTML = '<div class="empty">No messages yet.</div>';
+    return;
+  }
+  filtered.forEach(m => {
+    const isMe = currentUser && Number(m.sender_id) === Number(currentUser.id);
+    const bubble = document.createElement("div");
+    bubble.className = `msg ${isMe ? "me" : "other"}`;
+    const attachments = parseAttachments(m.attachments);
+    const attachmentHtml = attachments.length ? renderAttachmentHtml(attachments, isMe) : "";
+    const readInfo = isMe ? `<span>Seen by ${m.read_count || 0}</span>` : "";
+    const body = m.content && m.content.trim().length ? m.content : "Attachment";
+    bubble.innerHTML = `
+      <div><strong>${m.sender_name || "System"}</strong></div>
+      <div>${body}</div>
+      ${attachmentHtml}
+      <div class="msg-meta">
+        <span>${new Date(m.created_at).toLocaleString()}</span>
+        ${readInfo}
+      </div>
+    `;
+    chatMessages.appendChild(bubble);
+  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function renderAttachmentHtml(attachments, isMe){
+  const items = attachments.map(att => {
+    const label = att.name || att.url || "Attachment";
+    const url = att.data || att.url;
+    if(!url){
+      return `<div class="attachment">${label}</div>`;
+    }
+    if(att.type && att.type.startsWith("image")){
+      return `<div class="attachment"><img src="${url}" alt="${label}"><span>${label}</span></div>`;
+    }
+    return `<div class="attachment"><a href="${url}" target="_blank" rel="noopener">${label}</a></div>`;
+  }).join("");
+  return `<div class="msg-attachments">${items}</div>`;
+}
+
+async function sendMessage(){
+  if(!activeThreadId){
+    alert("Select a conversation first.");
+    return;
+  }
+  const input = document.getElementById("messageInput");
+  const content = (input.value || "").trim();
+  if(!content && pendingAttachments.length === 0){
+    alert("Type a message or attach a file.");
+    return;
+  }
+  await apiFetch(`/api/messages/threads/${activeThreadId}`, {
+    method: "POST",
+    body: JSON.stringify({ content, attachments: pendingAttachments.length ? pendingAttachments : null })
+  });
+  input.value = "";
+  pendingAttachments = [];
+  document.getElementById("attachmentInput").value = "";
+  document.getElementById("attachmentLink").value = "";
+  renderAttachmentList();
+  await loadThreadMessages(activeThreadId, true);
+  await loadThreads();
+}
+
+async function handleAttachmentFiles(e){
+  const files = Array.from(e.target.files || []);
+  for(const file of files){
+    if(pendingAttachments.length >= 5){
+      alert("Maximum of 5 attachments per message.");
+      break;
+    }
+    if(file.size > 1024 * 1024){
+      alert(`${file.name} is larger than 1MB. Use a link attachment instead.`);
+      continue;
+    }
+    const dataUrl = await readFileAsDataURL(file);
+    pendingAttachments.push({ name: file.name, type: file.type, size: file.size, data: dataUrl });
+  }
+  renderAttachmentList();
+}
+
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function addAttachmentLink(){
+  const input = document.getElementById("attachmentLink");
+  const url = (input.value || "").trim();
+  if(!url) return;
+  if(pendingAttachments.length >= 5){
+    alert("Maximum of 5 attachments per message.");
+    return;
+  }
+  pendingAttachments.push({ name: url, url });
+  input.value = "";
+  renderAttachmentList();
+}
+
+function renderAttachmentList(){
+  const list = document.getElementById("attachmentList");
+  list.innerHTML = "";
+  pendingAttachments.forEach((att, index) => {
+    const chip = document.createElement("div");
+    chip.className = "attachment-chip";
+    chip.innerHTML = `
+      <span>${att.name || att.url || "Attachment"}</span>
+      <button onclick="removeAttachment(${index})">x</button>
+    `;
+    list.appendChild(chip);
+  });
+}
+
+function removeAttachment(index){
+  pendingAttachments.splice(index, 1);
+  renderAttachmentList();
+}
+
+function openThreadModal(){
+  document.getElementById("threadModal").classList.add("open");
+  toggleThreadType();
+}
+
+function closeThreadModal(){
+  document.getElementById("threadModal").classList.remove("open");
+}
+
+function toggleThreadType(){
+  const type = document.getElementById("threadType").value;
+  const groupName = document.getElementById("groupName");
+  const directSelect = document.getElementById("directParticipant");
+  const groupSelect = document.getElementById("groupParticipants");
+  const broadcastNote = document.getElementById("broadcastNote");
+
+  groupName.style.display = type === "group" ? "block" : "none";
+  groupSelect.style.display = type === "group" ? "block" : "none";
+  directSelect.style.display = type === "direct" ? "block" : "none";
+  broadcastNote.style.display = type === "broadcast" ? "block" : "none";
+}
+
+async function createThread(){
+  const type = document.getElementById("threadType").value;
+  if(type === "broadcast" && currentUser.role !== "admin"){
+    alert("Only admins can start broadcasts.");
+    return;
+  }
+  let payload = { type };
+  if(type === "direct"){
+    const targetId = document.getElementById("directParticipant").value;
+    if(!targetId) return alert("Select a user.");
+    payload.participant_ids = [Number(targetId)];
+  }
+  if(type === "group"){
+    const name = document.getElementById("groupName").value.trim();
+    if(!name) return alert("Group name required.");
+    const selected = Array.from(document.getElementById("groupParticipants").selectedOptions).map(opt => Number(opt.value));
+    if(selected.length === 0) return alert("Select participants.");
+    payload.name = name;
+    payload.participant_ids = selected;
+  }
+  const res = await apiFetch("/api/messages/threads", { method: "POST", body: JSON.stringify(payload) });
+  const data = await res.json();
+  closeThreadModal();
+  await loadThreads();
+  if(data.id) selectThread(data.id);
+}
+
+async function loadNotifications(){
+  const filter = document.getElementById("notificationFilter").value;
+  const url = filter === "unread" ? "/api/notifications?status=unread" : "/api/notifications";
+  const res = await apiFetch(url);
+  const list = await res.json();
+  renderNotifications(list);
+}
+
+function renderNotifications(list){
+  const container = document.getElementById("notificationList");
+  container.innerHTML = "";
+  if(!Array.isArray(list) || list.length === 0){
+    container.innerHTML = '<div class="empty">No notifications found.</div>';
+    return;
+  }
+  list.forEach(item => {
+    const card = document.createElement("div");
+    card.className = `notification-card ${item.status === "unread" ? "unread" : ""}`;
+    card.innerHTML = `
+      <div class="notification-title">
+        <span>${item.title || item.type}</span>
+        <span>${item.status === "unread" ? "New" : ""}</span>
+      </div>
+      <div>${item.message}</div>
+      <div class="notification-meta">${new Date(item.created_at).toLocaleString()}</div>
+    `;
+    card.addEventListener("click", async () => {
+      if(item.status === "unread"){
+        await apiFetch("/api/notifications/mark-read", { method: "POST", body: JSON.stringify({ id: item.id }) });
+      }
+      if(item.link){
+        window.location.href = item.link;
+      }
+      loadNotifications();
+    });
+    container.appendChild(card);
+  });
+}
+
+async function markAllNotifications(){
+  await apiFetch("/api/notifications/mark-read", { method: "POST", body: JSON.stringify({ all: true }) });
+  loadNotifications();
+}
+
+function toggleNotifyTarget(){
+  const type = document.getElementById("notifyTargetType").value;
+  const userSelect = document.getElementById("notifyUser");
+  const roleSelect = document.getElementById("notifyRole");
+  if(type === "role"){
+    roleSelect.style.display = "block";
+    userSelect.style.display = "none";
+  }else{
+    roleSelect.style.display = "none";
+    userSelect.style.display = "block";
+  }
+}
+
+async function sendNotification(){
+  const type = document.getElementById("notifyType").value;
+  const targetType = document.getElementById("notifyTargetType").value;
+  const title = document.getElementById("notifyTitle").value.trim();
+  const message = document.getElementById("notifyMessage").value.trim();
+  const link = document.getElementById("notifyLink").value.trim();
+  const branchId = document.getElementById("notifyBranch").value;
+  if(!message) return alert("Notification message required.");
+  const payload = { type, title, message };
+  if(link) payload.link = link;
+  if(targetType === "user"){
+    payload.user_id = Number(document.getElementById("notifyUser").value);
+  }else{
+    payload.role = document.getElementById("notifyRole").value;
+    if(branchId) payload.branch_id = Number(branchId);
+  }
+  await apiFetch("/api/notifications", { method: "POST", body: JSON.stringify(payload) });
+  document.getElementById("notifyMessage").value = "";
+  document.getElementById("notifyTitle").value = "";
+  document.getElementById("notifyLink").value = "";
+  loadNotifications();
+}
+
+function startPolling(){
+  if(pollHandle) clearInterval(pollHandle);
+  pollHandle = setInterval(async () => {
+    if(document.visibilityState !== "visible") return;
+    await loadThreads();
+    if(activeThreadId) await loadThreadMessages(activeThreadId, false);
+    await loadNotifications();
+  }, 12000);
+}
+
+bootstrap();
+
+document.getElementById("notificationFilter").addEventListener("change", loadNotifications);
+
+document.getElementById("messageInput").addEventListener("keydown", (e) => {
+  if(e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+if(window.location.hash === "#notifications"){
+  document.getElementById("notificationsSection").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Portal - SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ef;
+  --ink:#0f172a;
+  --muted:#5b6770;
+  --surface:#ffffff;
+  --line:#e6e2dc;
+  --accent:#0ea5a4;
+  --accent-dark:#0f766e;
+  --accent-soft:#d7f5f2;
+  --shadow:0 18px 45px rgba(15,23,42,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{min-height:100vh;background:var(--bg);color:var(--ink);}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 12% 12%, #ffe7c4 0%, rgba(255,231,196,0) 45%),
+    radial-gradient(circle at 88% 8%, #c9f2ff 0%, rgba(201,242,255,0) 38%),
+    radial-gradient(circle at 80% 85%, #d7f5f2 0%, rgba(215,245,242,0) 50%);
+  z-index:-1;
+}
+.header{max-width:1100px;margin:0 auto;padding:26px 20px 10px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;}
+.header h1{font-size:28px;}
+.header p{color:var(--muted);font-size:14px;}
+.header .actions{display:flex;gap:10px;flex-wrap:wrap;}
+.header button{padding:10px 14px;border-radius:999px;border:none;background:#0f172a;color:#fff;cursor:pointer;font-weight:600;}
+
+.container{max-width:1100px;margin:0 auto;padding:0 20px 30px;display:grid;gap:20px;}
+.section{background:var(--surface);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.note{font-size:12px;color:var(--muted);}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+input,select{padding:10px;border-radius:10px;border:1px solid var(--line);font-size:13px;}
+.button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:13px;}
+.button.primary{background:var(--accent);color:#fff;}
+.button.ghost{background:var(--accent-soft);color:var(--accent-dark);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.product-card{border:1px solid #e7edf1;border-radius:12px;padding:14px;display:grid;gap:8px;background:#fbfcfd;}
+.product-title{font-weight:600;}
+.meta{font-size:12px;color:var(--muted);}
+.price{font-size:16px;font-weight:600;color:var(--accent-dark);}
+
+.cart-list{display:grid;gap:10px;}
+.cart-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;border-bottom:1px solid #f0f0f0;padding-bottom:8px;}
+.cart-row input{width:70px;}
+.totals{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-weight:600;}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.empty{text-align:center;color:var(--muted);padding:16px;font-size:12px;}
+
+.track-card{display:grid;gap:10px;}
+.track-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.site-footer{max-width:1100px;margin:0 auto;padding:0 20px 24px;text-align:center;font-size:12px;color:var(--muted);}
+
+@media(max-width:900px){
+  .cart-row{grid-template-columns:1fr auto;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Customer Portal</h1>
+    <p>Browse products, place orders, and track deliveries without a login.</p>
+  </div>
+  <div class="actions">
+    <button onclick="window.location='index.html'">Staff Login</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h3>Choose Branch</h3>
+        <span class="note">Select the branch you want to order from.</span>
+      </div>
+      <div class="tools">
+        <select id="branchSelect"></select>
+        <button class="button ghost" onclick="loadProducts()">Refresh</button>
+      </div>
+    </div>
+    <div id="shopfrontStatus" class="note"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h3>Product Catalog</h3>
+        <span class="note">Live inventory available for customers.</span>
+      </div>
+      <div class="tools">
+        <input id="searchInput" placeholder="Search products or category">
+      </div>
+    </div>
+    <div id="productGrid" class="grid"></div>
+    <div id="emptyProducts" class="empty" style="display:none;">No products available.</div>
+  </div>
+
+  <div class="section">
+    <h3>Your Order</h3>
+    <div id="cartList" class="cart-list"></div>
+
+    <div class="tools" style="margin-top:10px;flex-wrap:wrap;gap:10px;">
+      <input id="customerName" placeholder="Customer name">
+      <input id="customerContact" placeholder="Phone or email">
+      <select id="deliveryType">
+        <option value="branch">Branch Pickup</option>
+        <option value="door">Door Delivery</option>
+      </select>
+      <select id="paymentMethod">
+        <option value="Pay on Pickup">Pay on Pickup</option>
+        <option value="Cash on Delivery">Cash on Delivery</option>
+        <option value="M-PESA">M-PESA</option>
+        <option value="Card">Card</option>
+      </select>
+      <input id="deliveryAddress" placeholder="Delivery address" style="display:none;">
+      <input id="deliveryPhone" placeholder="Delivery phone" style="display:none;">
+      <input id="paymentReference" placeholder="Payment reference" style="display:none;">
+    </div>
+    <div id="mpesaHelp" class="note" style="margin-top:6px;"></div>
+
+    <div class="totals">
+      <span>Total</span>
+      <span id="cartTotal">KES 0</span>
+    </div>
+    <div id="deliveryFeeNote" class="note" style="margin-top:6px;"></div>
+    <div class="actions">
+      <button class="button ghost" onclick="clearCart()">Clear Cart</button>
+      <button class="button primary" id="orderButton" onclick="submitOrder()">Place Order</button>
+    </div>
+    <div id="orderStatus" class="note" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Track Existing Order</h3>
+    <div class="track-card">
+      <div class="note">Enter your order ID and contact to view tracking updates.</div>
+      <div class="track-actions">
+        <input id="trackOrderId" placeholder="Order ID">
+        <input id="trackContact" placeholder="Phone or email">
+        <button class="button primary" onclick="openTracking()">Track Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" id="siteFooter">Copyright &copy; 2026 SmartInventory Pro. All rights reserved.</footer>
+
+<script>
+let branches = [];
+let products = [];
+let cart = [];
+let deliveryFee = 0;
+let shopfrontEnabled = true;
+let currentMpesaConfig = null;
+
+const branchSelect = document.getElementById("branchSelect");
+const productGrid = document.getElementById("productGrid");
+const cartList = document.getElementById("cartList");
+const searchInput = document.getElementById("searchInput");
+const deliveryTypeSelect = document.getElementById("deliveryType");
+const deliveryAddressInput = document.getElementById("deliveryAddress");
+const deliveryPhoneInput = document.getElementById("deliveryPhone");
+const paymentMethodSelect = document.getElementById("paymentMethod");
+const paymentReferenceInput = document.getElementById("paymentReference");
+const deliveryFeeNote = document.getElementById("deliveryFeeNote");
+const mpesaHelp = document.getElementById("mpesaHelp");
+
+function requiresPaymentReference(method){
+  const value = String(method || "").toLowerCase();
+  if(!value) return false;
+  return !(value.includes("cash") || value.includes("pay on") || value.includes("delivery") || value.includes("pickup"));
+}
+
+function isMpesaMethod(method){
+  const value = String(method || "").toLowerCase();
+  return value.includes("mpesa") || value.includes("m-pesa");
+}
+
+function updateMpesaInfo(){
+  if(!mpesaHelp || !paymentMethodSelect) return;
+  if(!isMpesaMethod(paymentMethodSelect.value)){
+    mpesaHelp.textContent = "";
+    return;
+  }
+  if(!currentMpesaConfig){
+    mpesaHelp.textContent = "M-Pesa is not configured for the selected branch yet.";
+    return;
+  }
+  const label = currentMpesaConfig.business_type === "till" ? "Till" : "Paybill";
+  mpesaHelp.textContent = `${label}: ${currentMpesaConfig.shortcode} • Reference: ${currentMpesaConfig.account_reference || "Order Payment"} • ${currentMpesaConfig.transaction_description || "Customer order payment"}`;
+}
+
+function updatePaymentVisibility(){
+  if(!paymentMethodSelect || !paymentReferenceInput) return;
+  const needsRef = requiresPaymentReference(paymentMethodSelect.value);
+  paymentReferenceInput.style.display = needsRef ? "block" : "none";
+  if(needsRef){
+    paymentReferenceInput.placeholder = "Payment reference (e.g. M-PESA code)";
+  }
+  updateMpesaInfo();
+}
+
+function formatKES(value){
+  const n = Number(value) || 0;
+  return "KES " + n.toLocaleString();
+}
+
+async function loadBranches(){
+  const res = await fetch("/api/public/branches");
+  branches = await res.json();
+  branchSelect.innerHTML = "";
+  if(!branches.length){
+    branchSelect.innerHTML = "<option value=''>No branches</option>";
+    return;
+  }
+  branches.forEach(b => {
+    const opt = document.createElement("option");
+    opt.value = b.id;
+    opt.textContent = b.name;
+    branchSelect.appendChild(opt);
+  });
+  const saved = localStorage.getItem("publicBranchId");
+  if(saved && branches.find(b => String(b.id) === saved)){
+    branchSelect.value = saved;
+  }
+  await loadSettings();
+  await loadProducts();
+}
+
+async function loadSettings(){
+  const branchId = branchSelect.value;
+  if(!branchId) return;
+  const res = await fetch(`/api/public/settings?branch_id=${branchId}`);
+  const data = await res.json();
+  deliveryFee = Number(data.delivery_fee || 0);
+  shopfrontEnabled = data.shopfront_enabled !== false;
+  currentMpesaConfig = data.mpesa_account || null;
+  document.getElementById("siteFooter").textContent = data.site_footer_text || "Copyright © 2026 SmartInventory Pro. All rights reserved.";
+  const status = document.getElementById("shopfrontStatus");
+  status.textContent = shopfrontEnabled ? "Shopfront is open for orders." : "Shopfront is currently disabled.";
+  document.getElementById("orderButton").disabled = !shopfrontEnabled;
+  updateDeliveryVisibility();
+}
+
+async function loadProducts(){
+  const branchId = branchSelect.value;
+  if(!branchId) return;
+  const res = await fetch(`/api/public/products?branch_id=${branchId}`);
+  products = await res.json();
+  renderProducts();
+}
+
+function renderProducts(){
+  const query = (searchInput.value || "").toLowerCase();
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(query) || (p.category || "").toLowerCase().includes(query)
+  );
+  productGrid.innerHTML = "";
+  document.getElementById("emptyProducts").style.display = filtered.length ? "none" : "block";
+  filtered.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    card.innerHTML = `
+      <div class="product-title">${p.name}</div>
+      <div class="meta">${p.category || "General"} | Stock: ${p.quantity ?? 0}</div>
+      <div class="price">${formatKES(p.price)}</div>
+      <button class="button primary" onclick="addToCart(${p.id})">Add to Cart</button>
+    `;
+    productGrid.appendChild(card);
+  });
+}
+
+function addToCart(productId){
+  const product = products.find(p => p.id === productId);
+  if(!product) return;
+  const existing = cart.find(item => item.product_id === productId);
+  if(existing){
+    existing.qty += 1;
+  }else{
+    cart.push({
+      product_id: productId,
+      name: product.name,
+      price: Number(product.price || 0),
+      qty: 1
+    });
+  }
+  renderCart();
+}
+
+function updateQty(productId, value){
+  const item = cart.find(i => i.product_id === productId);
+  if(!item) return;
+  const qty = Math.max(1, Number(value) || 1);
+  item.qty = qty;
+  renderCart();
+}
+
+function removeItem(productId){
+  cart = cart.filter(i => i.product_id !== productId);
+  renderCart();
+}
+
+function clearCart(){
+  cart = [];
+  renderCart();
+  document.getElementById("orderStatus").textContent = "Cart cleared.";
+}
+
+function renderCart(){
+  cartList.innerHTML = "";
+  if(cart.length === 0){
+    cartList.innerHTML = '<div class="empty">No items in cart yet.</div>';
+  }else{
+    cart.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "cart-row";
+      row.innerHTML = `
+        <div>
+          <div class="product-title">${item.name}</div>
+          <div class="meta">${formatKES(item.price)}</div>
+        </div>
+        <input type="number" min="1" value="${item.qty}" onchange="updateQty(${item.product_id}, this.value)">
+        <div>${formatKES(item.price * item.qty)}</div>
+        <button class="button ghost" onclick="removeItem(${item.product_id})">Remove</button>
+      `;
+      cartList.appendChild(row);
+    });
+  }
+  const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const deliveryType = deliveryTypeSelect.value;
+  const fee = deliveryType === "door" ? deliveryFee : 0;
+  document.getElementById("cartTotal").textContent = formatKES(subtotal + fee);
+  deliveryFeeNote.textContent = deliveryType === "door" && fee > 0 ? `Delivery fee: ${formatKES(fee)} (added).` : "";
+}
+
+function updateDeliveryVisibility(){
+  const isDoor = deliveryTypeSelect.value === "door";
+  deliveryAddressInput.style.display = isDoor ? "block" : "none";
+  deliveryPhoneInput.style.display = isDoor ? "block" : "none";
+  if(paymentMethodSelect){
+    if(isDoor && paymentMethodSelect.value === "Pay on Pickup"){
+      paymentMethodSelect.value = "Cash on Delivery";
+    }
+    if(!isDoor && paymentMethodSelect.value === "Cash on Delivery"){
+      paymentMethodSelect.value = "Pay on Pickup";
+    }
+  }
+  updatePaymentVisibility();
+  renderCart();
+}
+
+async function submitOrder(){
+  if(!shopfrontEnabled){
+    alert("Shopfront is currently disabled.");
+    return;
+  }
+  if(cart.length === 0){
+    alert("Add items to the cart first.");
+    return;
+  }
+  const branchId = branchSelect.value;
+  if(!branchId){
+    alert("Select a branch to place the order.");
+    return;
+  }
+  const deliveryType = deliveryTypeSelect.value;
+  const deliveryAddress = deliveryAddressInput.value.trim();
+  const deliveryPhone = deliveryPhoneInput.value.trim();
+  const contact = document.getElementById("customerContact").value.trim();
+  const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : "";
+  const paymentReference = paymentReferenceInput ? paymentReferenceInput.value.trim() : "";
+  if(deliveryType === "door" && !deliveryAddress){
+    alert("Delivery address is required for door delivery.");
+    return;
+  }
+  if(deliveryType === "door" && !(deliveryPhone || contact)){
+    alert("Provide a delivery phone or contact.");
+    return;
+  }
+  if(requiresPaymentReference(paymentMethod) && !paymentReference){
+    alert("Enter a payment reference for the selected payment method.");
+    return;
+  }
+  if(isMpesaMethod(paymentMethod) && !currentMpesaConfig){
+    alert("M-Pesa is not configured for the selected branch.");
+    return;
+  }
+
+  const payload = {
+    customer_name: document.getElementById("customerName").value.trim(),
+    contact,
+    branch_id: Number(branchId),
+    delivery_type: deliveryType,
+    delivery_address: deliveryAddress,
+    delivery_phone: deliveryPhone,
+    payment_method: paymentMethod,
+    payment_reference: paymentReference,
+    mpesa_account_id: currentMpesaConfig && isMpesaMethod(paymentMethod) ? currentMpesaConfig.id : null,
+    items: cart.map(i => ({ product_id: i.product_id, qty: i.qty }))
+  };
+
+  const res = await fetch("/api/public/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  const status = document.getElementById("orderStatus");
+  if(!res.ok){
+    status.textContent = data.error || "Order failed.";
+    return;
+  }
+
+  const trackUrl = contact ? `track.html?order=${data.id}&contact=${encodeURIComponent(contact)}` : `track.html?order=${data.id}`;
+  const otpText = data.otp_code ? ` Delivery OTP: ${data.otp_code}.` : "";
+  const paymentText = data.payment_status ? ` Payment: ${data.payment_status}.` : "";
+  const mpesaText = data.mpesa_account ? ` M-Pesa ${data.mpesa_account.business_type === "till" ? "Till" : "Paybill"}: ${data.mpesa_account.shortcode}.` : "";
+  status.innerHTML = `Order #${data.id} submitted successfully.${otpText}${paymentText}${mpesaText} Track it here: <a href="${trackUrl}" target="_blank" rel="noopener">${trackUrl}</a>`;
+
+  cart = [];
+  renderCart();
+  document.getElementById("customerName").value = "";
+  document.getElementById("customerContact").value = "";
+  deliveryAddressInput.value = "";
+  deliveryPhoneInput.value = "";
+  if(paymentReferenceInput) paymentReferenceInput.value = "";
+  await loadProducts();
+}
+
+function openTracking(){
+  const orderId = document.getElementById("trackOrderId").value.trim();
+  const contact = document.getElementById("trackContact").value.trim();
+  if(!orderId || !contact){
+    alert("Enter order ID and contact.");
+    return;
+  }
+  const url = `track.html?order=${encodeURIComponent(orderId)}&contact=${encodeURIComponent(contact)}`;
+  window.open(url, "_blank");
+}
+
+branchSelect.addEventListener("change", async () => {
+  localStorage.setItem("publicBranchId", branchSelect.value);
+  await loadSettings();
+  await loadProducts();
+  clearCart();
+});
+
+searchInput.addEventListener("input", renderProducts);
+if(deliveryTypeSelect) deliveryTypeSelect.addEventListener("change", updateDeliveryVisibility);
+if(paymentMethodSelect) paymentMethodSelect.addEventListener("change", updatePaymentVisibility);
+
+loadBranches();
+renderCart();
+updatePaymentVisibility();
+updateDeliveryVisibility();
+</script>
+</body>
+</html>

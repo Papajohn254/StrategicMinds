@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Command Center — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;display:grid;gap:20px;}
+.hero{background:linear-gradient(120deg,#1f2f38,#2c5364);color:#fff;padding:24px;border-radius:16px;display:grid;gap:12px;}
+.hero h1{font-size:24px;}
+.hero p{font-size:13px;line-height:1.5;color:#d6e2e8;}
+.button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;background:#ff9800;color:#1f2d36;font-weight:600;}
+.section{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.section h3{margin-bottom:10px;color:#2c5364;}
+.note{font-size:12px;color:#666;line-height:1.5;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:10px;}
+.card{border:1px solid #e7edf1;border-radius:12px;padding:14px;background:#fbfcfd;display:grid;gap:8px;}
+.card h4{font-size:14px;color:#2c5364;}
+.list{margin-top:8px;display:grid;gap:6px;font-size:12px;color:#444;}
+.badge{display:inline-block;background:#e8f0f5;color:#2c5364;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:600;}
+@media(max-width:900px){
+  .sidebar{display:none;}
+  body{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navAI">AI Command Center</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>AI Command Center</h3>
+<span class="note">Business-brain architecture for your POS + Staff Portal system.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 User</div>
+</div>
+</div>
+
+<div class="content">
+<div class="hero">
+<h1>AI Super Assistant System</h1>
+<p>Transform your inventory system into a smart, self-running business brain. AI agents observe data, make decisions, automate tasks, and provide role-aware support across every department.</p>
+<button class="button" onclick="openAIHelper()">Open AI Assistant</button>
+</div>
+
+<div class="section">
+<h3>Core AI Agents</h3>
+<span class="note">Specialized agents working together like departments in a company.</span>
+<div class="grid">
+<div class="card">
+<h4>Stock Monitoring Agent</h4>
+<div class="list">Detects low stock, predicts runout dates, flags dead stock, tracks fast movers.</div>
+</div>
+<div class="card">
+<h4>Demand Forecast Agent</h4>
+<div class="list">Analyzes daily and seasonal trends, promotions, and expected spikes.</div>
+</div>
+<div class="card">
+<h4>Auto-Reorder Agent</h4>
+<div class="list">Suggests reorder quantities, supplier picks, and creates draft POs.</div>
+</div>
+<div class="card">
+<h4>Pricing Optimization Agent</h4>
+<div class="list">Recommends discounts for slow items and price lifts for high demand.</div>
+</div>
+<div class="card">
+<h4>Fraud & Loss Detection</h4>
+<div class="list">Detects unusual returns, suspicious edits, and theft patterns.</div>
+</div>
+<div class="card">
+<h4>Staff Behavior Agent</h4>
+<div class="list">Tracks attendance, sales per staff, refund behavior, and ranking.</div>
+</div>
+<div class="card">
+<h4>Conversational AI Assistant</h4>
+<div class="list">Answers natural language questions across sales, stock, staff, and profit.</div>
+</div>
+<div class="card">
+<h4>Smart Inventory Classification</h4>
+<div class="list">Auto-labels items as fast, slow, seasonal, luxury, or essential.</div>
+</div>
+<div class="card">
+<h4>Supplier Intelligence</h4>
+<div class="list">Scores supplier performance, delivery time, and price changes.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Universal AI Help & Support Agent</h3>
+<span class="note">Role-aware assistant embedded on every page. It adapts to permissions and current context.</span>
+<div class="grid">
+<div class="card">
+<h4>Admin</h4>
+<div class="list">Profit trends, branch performance, full analytics, strategic insights.</div>
+</div>
+<div class="card">
+<h4>Manager</h4>
+<div class="list">Low stock alerts, staff punctuality, purchase orders, reports.</div>
+</div>
+<div class="card">
+<h4>Cashier</h4>
+<div class="list">Refund guidance, barcode price checks, POS instructions.</div>
+</div>
+<div class="card">
+<h4>Storekeeper</h4>
+<div class="list">Expiry alerts, warehouse locations, stock receiving steps.</div>
+</div>
+<div class="card">
+<h4>Staff</h4>
+<div class="list">Shift info, attendance actions, performance view, help topics.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>What The AI Can Do</h3>
+<div class="grid">
+<div class="card">
+<h4>How-To Support</h4>
+<div class="list">Step-by-step guidance for POS, inventory, and staff workflows.</div>
+</div>
+<div class="card">
+<h4>Task Automation</h4>
+<div class="list">Create purchase orders, generate reports, and trigger notifications.</div>
+</div>
+<div class="card">
+<h4>Business Questions</h4>
+<div class="list">Profit insights, low stock alerts, and sales summaries on demand.</div>
+</div>
+<div class="card">
+<h4>Troubleshooting</h4>
+<div class="list">Printer, scanner, and system performance help.</div>
+</div>
+<div class="card">
+<h4>Staff Support</h4>
+<div class="list">Attendance, shift schedules, and performance requests.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Security & Controls</h3>
+<div class="list">
+<div>Role-based access controls for AI data visibility.</div>
+<div>Approval checkpoints for sensitive actions.</div>
+<div>Complete logs of AI activity for audit and compliance.</div>
+<div>Multilingual and voice-ready architecture.</div>
+</div>
+</div>
+
+<div class="section">
+<h3>System Layers & Data Flow</h3>
+<div class="list">
+<div><span class="badge">Users</span> Admin, Manager, Cashier, Storekeeper, Staff, Customer (optional)</div>
+<div><span class="badge">Apps</span> Web dashboard, POS terminal, staff portal, inventory panel, mobile app</div>
+<div><span class="badge">Backend</span> Auth, sales, inventory, staff, suppliers, reporting, settings</div>
+<div><span class="badge">Database</span> Products, sales, attendance, suppliers, AI logs</div>
+<div><span class="badge">AI Engine</span> Insight generation, anomaly detection, auto reports</div>
+<div><span class="badge">External</span> Payments, notifications, accounting exports</div>
+</div>
+<div class="note" style="margin-top:8px;">POS Sales → Database → AI Engine → Insights → Dashboard and Alerts</div>
+</div>
+
+<div class="section">
+<h3>System-Aware AI Knowledge Stack</h3>
+<span class="note">The AI assistant is fully informed across software workflows, business operations, and live data.</span>
+<div class="grid">
+<div class="card">
+<h4>System Knowledge</h4>
+<div class="list">Add/edit products, POS workflow, refunds, stock transfers, purchase orders, reporting, settings.</div>
+</div>
+<div class="card">
+<h4>Business Knowledge</h4>
+<div class="list">Reorder policies, safety stock, pricing rules, taxes, roles, approvals, supplier agreements.</div>
+</div>
+<div class="card">
+<h4>Real-Time Data</h4>
+<div class="list">Live stock levels, low stock alerts, sales today, staff attendance, pending orders.</div>
+</div>
+<div class="card">
+<h4>Role & Permission Control</h4>
+<div class="list">Admin sees all, managers see ops, cashiers see POS help only.</div>
+</div>
+<div class="card">
+<h4>Context Awareness</h4>
+<div class="list">POS page → POS guidance; Inventory page → stock workflows.</div>
+</div>
+<div class="card">
+<h4>Action Knowledge</h4>
+<div class="list">Create purchase orders, generate reports, trigger alerts, request approvals.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Fully Informed AI — What It Answers</h3>
+<div class="list">
+<div>“How do I process a return?” → Step-by-step POS guidance.</div>
+<div>“What items are running low?” → Live inventory list.</div>
+<div>“Show today’s profit.” → Real-time summary.</div>
+<div>“Who is on duty now?” → Attendance snapshot.</div>
+<div>“Recommend reorder quantities.” → Predictive reorder suggestions.</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Autonomous Retail Platform (Self-Running Store)</h3>
+<div class="grid">
+<div class="card">
+<h4>Autonomous Inventory</h4>
+<div class="list">Predicts demand, auto-reorder drafts, prevents stockouts, detects dead stock.</div>
+</div>
+<div class="card">
+<h4>Autonomous Pricing</h4>
+<div class="list">Suggests discounts for slow items and price lifts for high demand.</div>
+</div>
+<div class="card">
+<h4>Autonomous Monitoring</h4>
+<div class="list">Detects sales anomalies, device failures, suspicious activity.</div>
+</div>
+<div class="card">
+<h4>Autonomous Reporting</h4>
+<div class="list">Daily summaries, weekly trends, financial insights.</div>
+</div>
+<div class="card">
+<h4>Multi-Branch Intelligence</h4>
+<div class="list">Compares branches, reallocates stock, ranks performance.</div>
+</div>
+<div class="card">
+<h4>Investor-Ready Platform</h4>
+<div class="list">Cloud-ready, API-first, secure, and scalable architecture.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>AI Engine Modules</h3>
+<div class="grid">
+<div class="card">
+<h4>Stock Prediction</h4>
+<div class="list">Forecasts future needs and recommends reorder quantities.</div>
+</div>
+<div class="card">
+<h4>Anomaly Detection</h4>
+<div class="list">Flags suspicious refunds, stock losses, or sales spikes.</div>
+</div>
+<div class="card">
+<h4>Sales Intelligence</h4>
+<div class="list">Highlights best products, peak hours, and profit trends.</div>
+</div>
+<div class="card">
+<h4>Staff Performance</h4>
+<div class="list">Measures sales per staff, attendance patterns, productivity.</div>
+</div>
+<div class="card">
+<h4>Auto Reports</h4>
+<div class="list">Daily summaries, weekly exports, AI insights panels.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Daily Business Summary Example</h3>
+<div class="list">
+<div>Total Sales: KSh 84,200</div>
+<div>Top Product: Bread</div>
+<div>Low Stock: Sugar</div>
+<div>Best Staff: Mary</div>
+<div>Slow Item: Canned beans</div>
+</div>
+</div>
+
+<div class="section">
+<h3>AI Logs (Available Now)</h3>
+<span class="note">All AI chat activity is stored for auditing and continuous improvement.</span>
+<div class="list">
+<div>AI Conversations: user, role, message, response, page context</div>
+<div>Actions Log: reserved for automation workflows</div>
+<div>Alerts: reserved for proactive notifications</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Monetization Strategy (Optional SaaS)</h3>
+<div class="list">
+<div>Basic: AI help only</div>
+<div>Pro: data insights and reports</div>
+<div>Enterprise: full automation and approvals</div>
+</div>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+applyUserContext(["admin","manager","supervisor"]);
+initBranchSelector();
+</script>
+</body>
+</html>

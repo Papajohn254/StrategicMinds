@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order - SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{background:#f6f4ef;color:#0f172a;min-height:100vh;padding:24px;}
+.container{max-width:720px;margin:0 auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 18px 45px rgba(15,23,42,0.08);} 
+.header{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.header h2{font-size:22px;}
+.header p{color:#5b6770;font-size:13px;}
+.form{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:16px;}
+.form input{padding:10px 12px;border-radius:10px;border:1px solid #e6e2dc;font-size:14px;}
+.form button{padding:10px 16px;border-radius:10px;border:none;background:#0ea5a4;color:#fff;font-weight:600;cursor:pointer;}
+.card{border:1px solid #e6e2dc;border-radius:12px;padding:12px;margin-top:12px;background:#fbfbfa;}
+.timeline{display:grid;gap:8px;margin-top:10px;}
+.step{border-left:4px solid #e6e2dc;padding:6px 10px;font-size:13px;color:#5b6770;}
+.step.active{border-left-color:#0ea5a4;color:#0f172a;font-weight:600;}
+.meta{font-size:12px;color:#5b6770;display:grid;gap:4px;margin-top:8px;}
+.empty{padding:14px;text-align:center;color:#5b6770;font-size:12px;}
+.site-footer{max-width:720px;margin:18px auto 0;text-align:center;font-size:12px;color:#5b6770;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>Track Your Order</h2>
+    <p>Enter your order ID and contact to see live status updates.</p>
+  </div>
+
+  <div class="form">
+    <input id="orderId" placeholder="Order ID (e.g. 12)">
+    <input id="contact" placeholder="Contact (phone or email)">
+    <button onclick="trackOrder()">Track</button>
+  </div>
+
+  <div id="result" class="card">
+    <div class="empty">Enter your order ID and contact to begin tracking.</div>
+  </div>
+</div>
+
+<footer class="site-footer" id="siteFooter">Copyright &copy; 2026 SmartInventory Pro. All rights reserved.</footer>
+
+<script>
+function formatKES(value){
+  const n = Number(value) || 0;
+  return "KES " + n.toLocaleString();
+}
+
+function getQueryParams(){
+  const params = new URLSearchParams(window.location.search);
+  return {
+    order: params.get("order") || "",
+    contact: params.get("contact") || ""
+  };
+}
+
+async function loadFooterText(){
+  try{
+    const res = await fetch("/api/public/settings");
+    if(!res.ok) return;
+    const data = await res.json();
+    document.getElementById("siteFooter").textContent = data.site_footer_text || "Copyright © 2026 SmartInventory Pro. All rights reserved.";
+  }catch(err){
+    // ignore footer load failure
+  }
+}
+
+async function trackOrder(){
+  const orderId = document.getElementById("orderId").value.trim();
+  const contact = document.getElementById("contact").value.trim();
+  if(!orderId || !contact){
+    alert("Enter both order ID and contact.");
+    return;
+  }
+  const result = document.getElementById("result");
+  result.innerHTML = "<div class='empty'>Loading...</div>";
+  try{
+    const res = await fetch(`/api/shopfront/track/${encodeURIComponent(orderId)}?contact=${encodeURIComponent(contact)}`);
+    const data = await res.json();
+    if(!res.ok){
+      result.innerHTML = `<div class='empty'>${data.error || "Unable to find order."}</div>`;
+      return;
+    }
+    const steps = [
+      "Order Placed",
+      "Payment Confirmed",
+      "Processing",
+      "Packed",
+      data.delivery_type === "door" ? "Ready for Delivery" : "Ready for Pickup",
+      data.delivery_type === "door" ? "Rider Accepted" : "Picked Up",
+      data.delivery_type === "door" ? "On the Way" : "Delivered",
+      "Delivered"
+    ];
+    const timeline = Array.isArray(data.timeline) && data.timeline.length ? data.timeline : [{ step: data.status || "Order Placed" }];
+    const current = data.status || timeline[timeline.length - 1].step;
+    if(current && !steps.includes(current)){
+      steps.push(current);
+    }
+    const timelineHtml = steps.filter((step, index, arr) => arr.indexOf(step) === index).map(step => {
+      const active = step === current ? "active" : "";
+      return `<div class='step ${active}'>${step}</div>`;
+    }).join("");
+
+    result.innerHTML = `
+      <div><strong>Order #${data.id}</strong> (${data.delivery_type === "door" ? "Door Delivery" : "Branch Pickup"})</div>
+      <div class='meta'>
+        <div><strong>Status:</strong> ${current}</div>
+        <div><strong>Total:</strong> ${formatKES(data.total)}</div>
+        <div><strong>Payment:</strong> ${(data.payment_status || "Pending")}${data.payment_method ? ` (${data.payment_method})` : ""}</div>
+        <div><strong>Branch:</strong> ${data.branch_name || "-"}</div>
+        <div><strong>Address:</strong> ${data.delivery_address || "Branch pickup"}</div>
+      </div>
+      <div class='timeline'>${timelineHtml}</div>
+    `;
+  }catch(err){
+    result.innerHTML = "<div class='empty'>Unable to load tracking right now.</div>";
+  }
+}
+
+const params = getQueryParams();
+if(params.order) document.getElementById("orderId").value = params.order;
+if(params.contact) document.getElementById("contact").value = params.contact;
+loadFooterText();
+if(params.order && params.contact) trackOrder();
+</script>
+</body>
+</html>

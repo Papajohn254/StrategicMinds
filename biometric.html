@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biometric Attendance — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{display:flex;min-height:100vh;background:#f6f4ef;color:#0f172a;}
+.sidebar{width:240px;background:linear-gradient(180deg,#0f4c5c 0%, #0b2f35 100%);color:white;padding:24px;display:flex;flex-direction:column;gap:18px;}
+.sidebar h2{text-align:center;}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.sidebar ul li{padding:10px 12px;border-radius:10px;cursor:pointer;}
+.sidebar ul li:hover{background:rgba(255,255,255,0.12);}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;gap:10px;flex-wrap:wrap;}
+.topbar h3{font-size:22px;}
+.badge{background:#0f172a;color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;}
+.content{padding:0 28px 28px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 18px 45px rgba(15,23,42,0.08);}
+.card h4{font-size:16px;margin-bottom:6px;}
+.note{font-size:12px;color:#5b6770;margin-bottom:10px;}
+.status{font-size:13px;color:#0f172a;margin-top:8px;}
+button{padding:10px 12px;border:none;border-radius:10px;background:#0ea5a4;color:#fff;font-weight:600;cursor:pointer;}
+button.secondary{background:#e2e8f0;color:#0f172a;}
+@media(max-width:900px){.sidebar{display:none;}.content{padding:0 20px 24px;}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h2>SmartInventory</h2>
+  <ul>
+    <li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+    <li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+    <li id="navBiometric">Biometric</li>
+    <li onclick="logout()">Logout</li>
+  </ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h3>Biometric Attendance</h3>
+      <p class="note">Use device biometrics to clock in and out securely.</p>
+    </div>
+    <div class="badge" id="userBadge">Loading...</div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <h4>Enrollment</h4>
+      <p class="note">Register your fingerprint/face on this device (one time).</p>
+      <button onclick="enrollBiometric()">Enroll Biometrics</button>
+      <div id="enrollStatus" class="status"></div>
+    </div>
+    <div class="card">
+      <h4>Clock In / Out</h4>
+      <p class="note">Authenticate with biometrics to record attendance.</p>
+      <button onclick="biometricPunch()">Biometric Punch</button>
+      <button class="secondary" onclick="loadToday()">Refresh Status</button>
+      <div id="punchStatus" class="status"></div>
+      <div id="todayStatus" class="status"></div>
+    </div>
+    <div class="card">
+      <h4>Face Recognition</h4>
+      <p class="note">Enroll your face and use it to clock in/out.</p>
+      <video id="faceVideo" autoplay muted playsinline style="width:100%;border-radius:12px;background:#0f172a;"></video>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button onclick="startFaceCamera()">Start Camera</button>
+        <button class="secondary" onclick="stopFaceCamera()">Stop Camera</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button onclick="enrollFace()">Enroll Face</button>
+        <button onclick="facePunch()">Face Punch</button>
+      </div>
+      <div style="margin-top:10px;">
+        <label class="note"><input type="checkbox" id="faceKiosk"> Kiosk mode (identify any staff)</label>
+      </div>
+      <div id="faceStatus" class="status"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="vendor/simplewebauthn-browser.umd.min.js"></script>
+<script src="vendor/face-api.min.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","staff","cashier","storekeeper"]);
+const kioskToggle = document.getElementById("faceKiosk");
+if(kioskToggle){
+  const privileged = currentUser && ["admin","manager","supervisor"].includes(currentUser.role);
+  if(!privileged){
+    kioskToggle.closest("label").style.display = "none";
+  }
+}
+
+function getClient(){
+  if(!window.SimpleWebAuthnBrowser){
+    throw new Error("Biometric library not loaded.");
+  }
+  if(typeof window.SimpleWebAuthnBrowser.browserSupportsWebAuthn === "function" && !window.SimpleWebAuthnBrowser.browserSupportsWebAuthn()){
+    throw new Error("This browser does not support WebAuthn biometrics.");
+  }
+  return window.SimpleWebAuthnBrowser;
+}
+
+function ensureSecureContext(target){
+  if(window.isSecureContext) return true;
+  if(target){
+    target.textContent = "Biometrics require HTTPS or localhost.";
+  }
+  return false;
+}
+
+async function enrollBiometric(){
+  const status = document.getElementById("enrollStatus");
+  status.textContent = "Requesting enrollment...";
+  if(!ensureSecureContext(status)) return;
+  try{
+    const optionsRes = await apiFetch("/api/biometric/register/options", { method: "POST" });
+    const options = await optionsRes.json();
+    if(!optionsRes.ok){
+      status.textContent = options.error || "Unable to start enrollment.";
+      return;
+    }
+    const { startRegistration } = getClient();
+    const attestation = await startRegistration(options);
+    const verifyRes = await apiFetch("/api/biometric/register/verify", {
+      method: "POST",
+      body: JSON.stringify({ response: attestation })
+    });
+    const verify = await verifyRes.json();
+    if(!verifyRes.ok){
+      status.textContent = verify.error || "Enrollment failed.";
+      return;
+    }
+    status.textContent = "Biometric enrollment successful.";
+  }catch(err){
+    status.textContent = err.message || "Enrollment failed.";
+  }
+}
+
+async function biometricPunch(){
+  const status = document.getElementById("punchStatus");
+  status.textContent = "Authenticating...";
+  if(!ensureSecureContext(status)) return;
+  try{
+    const optionsRes = await apiFetch("/api/biometric/auth/options", { method: "POST" });
+    const options = await optionsRes.json();
+    if(!optionsRes.ok){
+      status.textContent = options.error || "Unable to start biometric check.";
+      return;
+    }
+    const { startAuthentication } = getClient();
+    const assertion = await startAuthentication(options);
+
+    let location = null;
+    if(navigator.geolocation){
+      await new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            location = `${pos.coords.latitude},${pos.coords.longitude}`;
+            resolve();
+          },
+          () => resolve(),
+          { timeout: 5000 }
+        );
+      });
+    }
+
+    const verifyRes = await apiFetch("/api/biometric/attendance", {
+      method: "POST",
+      body: JSON.stringify({ response: assertion, location })
+    });
+    const data = await verifyRes.json();
+    if(!verifyRes.ok){
+      status.textContent = data.error || "Biometric verification failed.";
+      return;
+    }
+    const actionLabel = data.action === "clock_out" ? "Clocked out" : "Clocked in";
+    status.textContent = `${actionLabel} successfully.`;
+    loadToday();
+  }catch(err){
+    status.textContent = err.message || "Biometric verification failed.";
+  }
+}
+
+async function loadToday(){
+  const target = document.getElementById("todayStatus");
+  target.textContent = "Loading today status...";
+  try{
+    const res = await apiFetch("/api/attendance/today");
+    const record = await res.json();
+    if(!record){
+      target.textContent = "No attendance recorded today.";
+      return;
+    }
+    const clockIn = record.clock_in ? new Date(record.clock_in).toLocaleTimeString() : "-";
+    const clockOut = record.clock_out ? new Date(record.clock_out).toLocaleTimeString() : "-";
+    target.textContent = `Today: In ${clockIn}, Out ${clockOut}, Method ${record.method || "-"}.`;
+  }catch(err){
+    target.textContent = "Unable to load attendance.";
+  }
+}
+
+loadToday();
+
+let faceStream = null;
+let faceModelsLoaded = false;
+
+async function waitForVideoReady(video){
+  if(video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0){
+    return;
+  }
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("Camera video did not become ready in time."));
+    }, 5000);
+    function cleanup(){
+      clearTimeout(timeout);
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("error", onError);
+    }
+    function onReady(){
+      cleanup();
+      resolve();
+    }
+    function onError(){
+      cleanup();
+      reject(new Error("Camera video failed to load."));
+    }
+    video.addEventListener("loadeddata", onReady, { once: true });
+    video.addEventListener("error", onError, { once: true });
+  });
+}
+
+async function initBiometricReadiness(){
+  const enrollStatus = document.getElementById("enrollStatus");
+  const faceStatus = document.getElementById("faceStatus");
+  if(!window.isSecureContext){
+    enrollStatus.textContent = "Biometric sign-in requires HTTPS or localhost.";
+    faceStatus.textContent = "Face recognition camera access requires HTTPS or localhost.";
+    return;
+  }
+  try{
+    const client = getClient();
+    let platformReady = true;
+    if(typeof client.platformAuthenticatorIsAvailable === "function"){
+      platformReady = await client.platformAuthenticatorIsAvailable();
+    }
+    enrollStatus.textContent = platformReady
+      ? "Device biometrics are available. Enroll once, then punch in or out."
+      : "No built-in device biometric found here. Use face recognition below or try another device/browser.";
+  }catch(err){
+    enrollStatus.textContent = err.message || "Biometric support could not be initialized.";
+  }
+  if(window.faceapi){
+    faceStatus.textContent = "Face recognition is ready. Start the camera to enroll or punch.";
+  }else{
+    faceStatus.textContent = "Face recognition library failed to load.";
+  }
+}
+
+async function loadFaceModels(){
+  if(faceModelsLoaded) return;
+  if(!window.faceapi){
+    throw new Error("Face recognition library not loaded.");
+  }
+  const modelPath = new URL("models/", window.location.href).toString();
+  try{
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(modelPath),
+      faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
+      faceapi.nets.faceRecognitionNet.loadFromUri(modelPath)
+    ]);
+  }catch(err){
+    throw new Error("Face models failed to load. Check the /models path and make sure files are deployed.");
+  }
+  faceModelsLoaded = true;
+}
+
+async function startFaceCamera(){
+  const status = document.getElementById("faceStatus");
+  const video = document.getElementById("faceVideo");
+  try{
+    if(!window.isSecureContext){
+      status.textContent = "Camera access requires HTTPS or localhost.";
+      return;
+    }
+    await loadFaceModels();
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      status.textContent = "Camera not supported in this browser.";
+      return;
+    }
+    if(faceStream){
+      video.srcObject = faceStream;
+      status.textContent = "Camera already running.";
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    faceStream = stream;
+    video.srcObject = stream;
+    await video.play().catch(()=>{});
+    await waitForVideoReady(video);
+    status.textContent = "Camera ready. Position your face clearly.";
+  }catch(err){
+    status.textContent = err.message || "Unable to start camera.";
+  }
+}
+
+function stopFaceCamera(){
+  const video = document.getElementById("faceVideo");
+  if(faceStream){
+    faceStream.getTracks().forEach(track => track.stop());
+    faceStream = null;
+  }
+  if(video) video.srcObject = null;
+  const status = document.getElementById("faceStatus");
+  status.textContent = "Camera stopped.";
+}
+
+async function captureDescriptor(){
+  const video = document.getElementById("faceVideo");
+  if(!faceStream){
+    await startFaceCamera();
+  }
+  await loadFaceModels();
+  await waitForVideoReady(video);
+  const detection = await faceapi
+    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  if(!detection){
+    throw new Error("No face detected. Center your face and try again.");
+  }
+  return Array.from(detection.descriptor);
+}
+
+async function enrollFace(){
+  const status = document.getElementById("faceStatus");
+  status.textContent = "Capturing face...";
+  try{
+    const descriptor = await captureDescriptor();
+    const res = await apiFetch("/api/face/enroll", {
+      method: "POST",
+      body: JSON.stringify({ descriptor })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      status.textContent = data.error || "Face enrollment failed.";
+      return;
+    }
+    status.textContent = "Face enrolled successfully.";
+  }catch(err){
+    status.textContent = err.message || "Face enrollment failed.";
+  }
+}
+
+async function facePunch(){
+  const status = document.getElementById("faceStatus");
+  status.textContent = "Recognizing face...";
+  try{
+    const descriptor = await captureDescriptor();
+    let location = null;
+    if(navigator.geolocation){
+      await new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            location = `${pos.coords.latitude},${pos.coords.longitude}`;
+            resolve();
+          },
+          () => resolve(),
+          { timeout: 5000 }
+        );
+      });
+    }
+    const scope = document.getElementById("faceKiosk").checked ? "all" : "self";
+    const res = await apiFetch("/api/face/attendance", {
+      method: "POST",
+      body: JSON.stringify({ descriptor, location, scope })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      status.textContent = data.error || "Face recognition failed.";
+      return;
+    }
+    const name = data.user ? data.user.name : "User";
+    const actionLabel = data.action === "clock_out" ? "clocked out" : "clocked in";
+    status.textContent = `${name} ${actionLabel} successfully.`;
+    loadToday();
+  }catch(err){
+    status.textContent = err.message || "Face recognition failed.";
+  }
+}
+
+initBiometricReadiness();
+</script>
+</body>
+</html>

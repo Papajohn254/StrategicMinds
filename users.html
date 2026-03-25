@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Users & Roles — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.content{padding:25px;}
+.form-box,.table-box{background:white;padding:20px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+input,select{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
+button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+button:hover{background:#203a43;}
+button.secondary{background:#ff9800;}
+button.danger{background:#d9534f;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#777;padding:20px;}
+.note{color:#666;font-size:13px;line-height:1.5;}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;}
+.role-card{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;display:grid;gap:8px;}
+.role-card h4{font-size:14px;}
+.role-card p{font-size:12px;color:#555;}
+.role-card ul{padding-left:18px;font-size:12px;color:#555;line-height:1.4;}
+.matrix-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px;}
+.matrix-table th,.matrix-table td{border:1px solid #eee;padding:8px;text-align:center;}
+.matrix-table th:first-child,.matrix-table td:first-child{text-align:left;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Users & Roles</h3>
+<div id="userBadge">👤 Admin</div>
+</div>
+
+<div class="content">
+
+<div class="form-box">
+<h3 id="formTitle">Add New User</h3>
+<p class="note">Manage system access. Passwords are hashed and stored securely. Use at least 8 characters with upper, lower, and number.</p>
+<div class="form-grid">
+<input id="name" placeholder="Full Name">
+<input id="email" type="email" placeholder="Email">
+<input id="phone" placeholder="Phone Number">
+<input id="staffId" placeholder="Staff ID">
+<input id="username" placeholder="Username">
+<select id="role">
+<option value="admin">Admin</option>
+<option value="manager">Store Manager</option>
+<option value="storekeeper">Storekeeper</option>
+<option value="staff">Store Staff</option>
+<option value="cashier">Cashier</option>
+<option value="supervisor">Supervisor</option>
+<option value="rider">Delivery Rider</option>
+<option value="supplier">Supplier</option>
+<option value="seller">Seller</option>
+<option value="retailer">Retailer</option>
+<option value="wholesaler">Wholesaler</option>
+</select>
+<select id="branch"></select>
+<select id="status">
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+<option value="pending">Pending Approval</option>
+</select>
+<input id="password" type="password" placeholder="Password">
+</div>
+<button id="saveBtn" onclick="saveUser()">Add User</button>
+<button class="secondary" type="button" onclick="clearForm()">Clear</button>
+</div>
+
+<div class="table-box">
+<h3>User Directory</h3>
+<input id="searchInput" placeholder="Search by name, email, or role" oninput="renderUsers()">
+<div class="table-wrap">
+<table id="userTable">
+<tr><th>Name</th><th>Email</th><th>Phone</th><th>Staff ID</th><th>Username</th><th>Role</th><th>Branch</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+</table>
+</div>
+</div>
+
+<div class="table-box">
+<h3>Roles & Responsibilities</h3>
+<p class="note">Use this guide to assign roles consistently and keep access aligned with responsibilities. Optional roles such as Supplier and Customer require dedicated portals.</p>
+
+<div class="roles-grid">
+  <div class="role-card">
+    <h4>Admin / Owner (Superuser)</h4>
+    <p>Full control of the system and security.</p>
+    <ul>
+      <li>Manage users, roles, and permissions</li>
+      <li>Configure POS, AI assistant, and notifications</li>
+      <li>Access all reports, analytics, and audit logs</li>
+      <li>Approve purchase orders and financial decisions</li>
+      <li>Oversee multi-branch operations and AI alerts</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Store / Branch Manager</h4>
+    <p>Operational leader for a branch.</p>
+    <ul>
+      <li>Oversee inventory levels and transfers</li>
+      <li>Approve purchase orders</li>
+      <li>Monitor daily sales and staff performance</li>
+      <li>Receive AI recommendations and alerts</li>
+      <li>Generate branch reports</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Store Staff / Cashier</h4>
+    <p>Day-to-day operations and sales.</p>
+    <ul>
+      <li>Scan products and process sales</li>
+      <li>Receive and stock inventory</li>
+      <li>Report damaged or expired items</li>
+      <li>Send and receive internal messages</li>
+      <li>View notifications relevant to duties</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Warehouse Staff / Storekeeper</h4>
+    <p>Inventory handling and stock control.</p>
+    <ul>
+      <li>Receive incoming shipments</li>
+      <li>Organize warehouse and track locations</li>
+      <li>Perform stock-taking and cycle counts</li>
+      <li>Update inventory records</li>
+      <li>Print labels and barcodes</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Delivery Rider</h4>
+    <p>Handles last-mile delivery for door orders.</p>
+    <ul>
+      <li>See available delivery orders</li>
+      <li>Accept and update delivery status</li>
+      <li>Confirm delivery with OTP</li>
+      <li>Communicate with branch team</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Supplier / Vendor (Optional)</h4>
+    <p>External portal role for purchase order visibility.</p>
+    <ul>
+      <li>Receive purchase orders</li>
+      <li>Confirm deliveries and ETA</li>
+      <li>Communicate with procurement team</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>Customer (Optional)</h4>
+    <p>Online ordering and tracking role.</p>
+    <ul>
+      <li>Place orders online</li>
+      <li>Track delivery status</li>
+      <li>Confirm delivery or pickup</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>System Administrator / IT Support</h4>
+    <p>Technical maintenance and infrastructure.</p>
+    <ul>
+      <li>Maintain servers, database, and backups</li>
+      <li>Troubleshoot system issues</li>
+      <li>Deploy updates and integrations</li>
+      <li>Secure environment and access controls</li>
+    </ul>
+  </div>
+  <div class="role-card">
+    <h4>AI Assistant (Virtual Role)</h4>
+    <p>System intelligence and alerts.</p>
+    <ul>
+      <li>Monitor inventory and POS in real time</li>
+      <li>Generate predictive alerts and recommendations</li>
+      <li>Answer staff queries and procedures</li>
+      <li>Suggest optimal ordering and pricing</li>
+    </ul>
+  </div>
+</div>
+
+<h4 style="margin-top:18px;">Role Access Matrix</h4>
+<div class="table-wrap">
+  <table class="matrix-table">
+    <tr>
+      <th>Role</th>
+      <th>POS</th>
+      <th>Inventory</th>
+      <th>Reports</th>
+      <th>Messaging</th>
+      <th>AI Alerts</th>
+      <th>Admin Settings</th>
+    </tr>
+    <tr>
+      <td>Admin / Owner</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Store / Branch Manager</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>Store Staff / Cashier</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>Warehouse Staff</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>System Administrator</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes (technical)</td>
+    </tr>
+    <tr>
+      <td>Delivery Rider</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+    </tr>
+  </table>
+</div>
+</div>
+
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin"]);
+let users = [];
+let branches = [];
+let editIndex = -1;
+
+async function loadBranches(){
+    const res = await apiFetch("/api/branches");
+    branches = await res.json();
+    const select = document.getElementById("branch");
+    select.innerHTML = "";
+    branches.forEach(b=>{
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.textContent = b.name;
+        select.appendChild(opt);
+    });
+}
+
+async function loadUsers(){
+    const res = await apiFetch("/api/users");
+    users = await res.json();
+    renderUsers();
+}
+
+async function saveUser(){
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const staff_id = document.getElementById("staffId").value.trim();
+    const username = document.getElementById("username").value.trim();
+    const role = document.getElementById("role").value;
+    const branchId = Number(document.getElementById("branch").value);
+    const status = document.getElementById("status").value;
+    const password = document.getElementById("password").value;
+
+    if(!name || !email){alert("Name and email are required"); return;}
+    if(!staff_id && !username){alert("Staff ID or username is required"); return;}
+    if(["supplier","seller","retailer","wholesaler"].includes(role) && !phone){alert("Phone number is required for vendor accounts"); return;}
+    if(editIndex === -1 && !password){alert("Password is required for new users"); return;}
+    if(!branchId){alert("Select a branch"); return;}
+
+    try{
+        if(editIndex === -1){
+            const res = await apiFetch("/api/users", {
+                method: "POST",
+                body: JSON.stringify({ name, email, phone, role, status, password, branch_id: branchId, staff_id, username })
+            });
+            const data = await res.json();
+            if(!res.ok){alert(data.error || "Failed to add user"); return;}
+        }else{
+            const user = users[editIndex];
+            const res = await apiFetch(`/api/users/${user.id}`, {
+                method: "PUT",
+                body: JSON.stringify({ name, email, phone, role, status, password: password || undefined, branch_id: branchId, staff_id, username })
+            });
+            const data = await res.json();
+            if(!res.ok){alert(data.error || "Failed to update user"); return;}
+        }
+        clearForm();
+        await loadUsers();
+    }catch(err){
+        alert("Server error");
+    }
+}
+
+function renderUsers(){
+    const table = document.getElementById("userTable");
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    table.innerHTML = `<tr><th>Name</th><th>Email</th><th>Phone</th><th>Staff ID</th><th>Username</th><th>Role</th><th>Branch</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>`;
+
+    const filtered = users.filter(u=>
+        !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.phone||"").toLowerCase().includes(q) || (u.staff_id||"").toLowerCase().includes(q) || (u.username||"").toLowerCase().includes(q) || (u.role||"").toLowerCase().includes(q) || (u.branch_name||"").toLowerCase().includes(q)
+    );
+
+    if(filtered.length === 0){
+        table.innerHTML += `<tr><td colspan="10" class="empty">No users found</td></tr>`;
+        return;
+    }
+
+    filtered.forEach((u)=>{
+        const idx = users.indexOf(u);
+        const approveButton = u.status === "pending" ? `<button class="secondary" onclick="approveUser(${idx})">Approve</button>` : "";
+        table.innerHTML += `<tr>
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td>${u.phone || "-"}</td>
+        <td>${u.staff_id || "-"}</td>
+        <td>${u.username || "-"}</td>
+        <td>${u.role}</td>
+        <td>${u.branch_name || "-"}</td>
+        <td>${u.status || "active"}</td>
+        <td>${u.last_login || "-"}</td>
+        <td>
+        <button class="secondary" onclick="editUser(${idx})">Edit</button>
+        ${approveButton}
+        <button class="danger" onclick="deleteUser(${idx})">Delete</button>
+        </td>
+        </tr>`;
+    });
+}
+
+async function approveUser(i){
+    const user = users[i];
+    if(!user || user.status !== "pending") return;
+    const res = await apiFetch(`/api/users/${user.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "active" })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Approval failed");
+        return;
+    }
+    await loadUsers();
+}
+
+function editUser(i){
+    const u = users[i];
+    document.getElementById("name").value = u.name;
+    document.getElementById("email").value = u.email;
+    document.getElementById("phone").value = u.phone || "";
+    document.getElementById("staffId").value = u.staff_id || "";
+    document.getElementById("username").value = u.username || "";
+    document.getElementById("role").value = u.role || "staff";
+    document.getElementById("branch").value = u.branch_id || "";
+    document.getElementById("status").value = u.status || "active";
+    document.getElementById("password").value = "";
+    editIndex = i;
+    document.getElementById("saveBtn").innerText = "Update User";
+    document.getElementById("formTitle").innerText = "Edit User";
+}
+
+async function deleteUser(i){
+    const user = users[i];
+    if(!confirm("Delete this user?")) return;
+    const res = await apiFetch(`/api/users/${user.id}`, { method: "DELETE" });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Delete failed"); return;}
+    await loadUsers();
+}
+
+function clearForm(){
+    document.querySelectorAll(".form-box input").forEach(i=>i.value="");
+    document.getElementById("role").value = "staff";
+    document.getElementById("status").value = "active";
+    const branchSelect = document.getElementById("branch");
+    if(branchSelect && branchSelect.options.length > 0){branchSelect.selectedIndex = 0;}
+    editIndex = -1;
+    document.getElementById("saveBtn").innerText = "Add User";
+    document.getElementById("formTitle").innerText = "Add New User";
+}
+
+loadBranches().then(loadUsers);
+</script>
+
+</body>
+</html>

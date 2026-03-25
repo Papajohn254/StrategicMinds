@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" data-scanner-lib="html5-qrcode" onerror="this.onerror=null;this.src='vendor/html5-qrcode.min.js';"></script>
+<style>
+:root{
+    --bg:#f6f4ef;
+    --ink:#0f172a;
+    --muted:#5b6770;
+    --surface:#ffffff;
+    --line:#e6e2dc;
+    --accent:#0ea5a4;
+    --accent-dark:#0f766e;
+    --accent-soft:#d7f5f2;
+    --danger:#ef4444;
+    --warning:#f59e0b;
+    --shadow:0 18px 45px rgba(15,23,42,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{min-height:100vh;display:flex;background:var(--bg);color:var(--ink);}
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:
+        radial-gradient(circle at 12% 12%, #ffe7c4 0%, rgba(255,231,196,0) 45%),
+        radial-gradient(circle at 88% 8%, #c9f2ff 0%, rgba(201,242,255,0) 38%),
+        radial-gradient(circle at 80% 85%, #d7f5f2 0%, rgba(215,245,242,0) 50%);
+    z-index:-1;
+}
+.sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f4c5c 0%, #0b2f35 100%);color:white;padding:24px;display:flex;flex-direction:column;gap:24px;}
+.sidebar h2{font-size:20px;letter-spacing:0.5px;text-align:center;}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.sidebar ul li{padding:12px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s ease;}
+.sidebar ul li:hover{background:rgba(255,255,255,0.12);}
+.sidebar ul li#navSales{background:rgba(255,255,255,0.18);}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:22px 30px;}
+.topbar h3{font-size:24px;margin-bottom:4px;}
+.topbar p{color:var(--muted);font-size:14px;}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;}
+.topbar-right select{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;}
+.pill{background:var(--surface);padding:8px 14px;border-radius:999px;box-shadow:var(--shadow);font-size:13px;display:flex;gap:6px;align-items:center;}
+.user-badge{background:#0f172a;color:#fff;padding:8px 12px;border-radius:999px;font-size:12px;}
+.content{display:grid;grid-template-columns:1.4fr 0.9fr;gap:22px;padding:0 30px 30px;}
+.panel{display:flex;flex-direction:column;gap:18px;}
+.section{background:var(--surface);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);animation:fadeUp 0.45s ease both;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section h4{font-size:16px;}
+.hint{font-size:12px;color:var(--muted);margin-top:8px;}
+.scanner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.button.small{padding:8px 12px;font-size:12px;border-radius:999px;}
+.scanner-modal{position:fixed;inset:0;background:rgba(15,23,42,0.6);display:none;align-items:center;justify-content:center;z-index:20;}
+.scanner-modal.open{display:flex;}
+.scanner-card{background:#fff;border-radius:16px;padding:16px;max-width:420px;width:92%;box-shadow:var(--shadow);display:grid;gap:12px;}
+.scanner-head{display:flex;justify-content:space-between;align-items:center;}
+.scanner-head h4{margin:0;font-size:16px;}
+.scanner-viewport{width:100%;min-height:240px;border-radius:12px;overflow:hidden;background:#0b2f35;color:#fff;display:flex;align-items:center;justify-content:center;}
+.search-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.return-row{display:grid;grid-template-columns:1fr auto;gap:12px;}
+input, select{
+    width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+    outline:none;background:#fbfbfa;color:var(--ink);font-size:14px;
+}
+input:focus, select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,165,164,0.15);}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;}
+.product-tile{
+    border:1px solid var(--line);background:#fbfbfa;border-radius:16px;padding:12px;
+    text-align:left;cursor:pointer;transition:all 0.2s ease;display:flex;flex-direction:column;gap:6px;
+}
+.product-tile:hover{transform:translateY(-2px);border-color:rgba(14,165,164,0.4);box-shadow:0 16px 30px rgba(15,23,42,0.08);}
+.product-name{font-weight:600;font-size:14px;}
+.product-meta{font-size:12px;color:var(--muted);}
+.product-price{font-weight:600;color:var(--accent-dark);}
+.product-tile.low-stock{border-color:rgba(239,68,68,0.4);background:#fff6f6;}
+.legend{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--accent);}
+.dot.low{background:var(--danger);}
+.cart-table{width:100%;border-collapse:collapse;font-size:13px;}
+.cart-table th, .cart-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;}
+.cart-table th{font-size:12px;color:var(--muted);}
+.cart-table input{width:70px;}
+.actions button{margin-right:4px;}
+.totals{display:flex;flex-direction:column;gap:12px;}
+.totals-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;}
+.totals-row input{width:110px;}
+.totals-line{display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--muted);}
+.totals-line.total{font-size:18px;font-weight:600;color:var(--ink);}
+.button{padding:10px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:600;transition:all 0.2s ease;}
+.button.primary{background:var(--accent);color:white;}
+.button.primary:hover{background:var(--accent-dark);}
+.button.ghost{background:var(--accent-soft);color:var(--accent-dark);}
+.button.ghost:hover{filter:brightness(0.98);}
+.empty{padding:16px;color:var(--muted);text-align:center;font-size:13px;}
+@keyframes fadeUp{
+    from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}
+}
+@media(max-width:1100px){
+    .content{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .topbar{padding:20px;}
+    .content{padding:0 20px 24px;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>SmartInventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>Point of Sale</h3>
+<p>Fast checkout with live stock sync and printable receipts.</p>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div class="pill">Items <span id="cartCount">0</span></div>
+<div class="pill">Total <span id="cartTotalTop">KES 0</span></div>
+<div id="userBadge" class="user-badge">User</div>
+</div>
+</div>
+
+<div class="content">
+<div class="panel">
+<div class="section">
+<h4>Customer</h4>
+<select class="customer-select" id="customerSelect">
+<option value="">-- Walk-in Customer --</option>
+</select>
+</div>
+
+<div class="section">
+<h4>Find Products</h4>
+<div class="search-row">
+<input type="text" id="searchInput" placeholder="Search by name or category">
+<input type="text" id="barcodeInput" placeholder="Scan barcode and press Enter">
+</div>
+<p class="hint">Tip: barcode scanning is active across the page.</p>
+<div class="scanner-actions">
+<button class="button small ghost" type="button" onclick="openScanner()">Scan with Camera</button>
+</div>
+</div>
+
+<div class="section">
+<div class="section-head">
+<h4>Products</h4>
+<span class="legend"><span class="dot low"></span>Low stock</span>
+</div>
+<div class="products-grid" id="productsGrid"></div>
+</div>
+</div>
+
+<div class="panel">
+<div class="section">
+<div class="section-head">
+<h4>Cart</h4>
+<button class="button ghost" onclick="clearCart()">Clear</button>
+</div>
+<table class="cart-table" id="cartTable"></table>
+</div>
+
+<div class="section totals">
+<div class="totals-row">
+<label for="discount">Discount (KES)</label>
+<input type="number" id="discount" value="0" min="0">
+</div>
+<div class="totals-row">
+<label for="tax">Tax (%)</label>
+<input type="number" id="tax" value="0" min="0">
+</div>
+<div class="totals-row">
+<label for="paymentMode">Payment Mode</label>
+<select id="paymentMode"></select>
+</div>
+<div class="totals-row" id="tableRow">
+<label for="tableName">Table / Park</label>
+<input type="text" id="tableName" placeholder="Table Name">
+</div>
+<div class="totals-row">
+<label for="deliveryFee">Delivery Fee</label>
+<input type="number" id="deliveryFee" value="0" min="0">
+</div>
+<div class="totals-row">
+<label for="packingFee">Packing Fee</label>
+<input type="number" id="packingFee" value="0" min="0">
+</div>
+<div class="totals-row">
+<label for="serviceFee">Service Fee</label>
+<input type="number" id="serviceFee" value="0" min="0">
+</div>
+<div class="totals-row">
+<label for="otherFee">Other Fee</label>
+<input type="number" id="otherFee" value="0" min="0">
+</div>
+<div class="totals-line"><span>Subtotal</span><span id="cartSubtotal">KES 0</span></div>
+<div class="totals-line"><span>Tax</span><span id="cartTax">KES 0</span></div>
+<div class="totals-line"><span>Fees</span><span id="cartFees">KES 0</span></div>
+<div class="totals-line total"><span>Total</span><span id="cartTotal">KES 0</span></div>
+<button class="button primary" onclick="completeSale()">Complete Sale & Print</button>
+</div>
+
+<div class="section" id="returnsSection">
+<div class="section-head">
+<h4>Returns & Refunds</h4>
+</div>
+<div class="return-row">
+<input type="text" id="returnReceipt" placeholder="Receipt ID">
+<button class="button ghost" onclick="loadReceipt()">Load</button>
+</div>
+<div class="return-row">
+<input type="text" id="returnBarcode" placeholder="Scan item barcode to return">
+<button class="button ghost" onclick="scanReturnBarcode()">Scan</button>
+</div>
+<div class="hint" id="returnMeta">Enter a receipt to load items for return.</div>
+<table class="cart-table" id="returnTable"></table>
+<input type="text" id="returnReason" placeholder="Reason (optional)">
+<div class="totals-line"><span>Refund Total</span><span id="returnTotal">KES 0</span></div>
+<button class="button primary" onclick="processReturn()">Process Return</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="scanner-modal" id="scannerModal">
+<div class="scanner-card">
+<div class="scanner-head">
+<h4>Camera Scanner</h4>
+<button class="button small ghost" type="button" onclick="closeScanner()">Close</button>
+</div>
+<div class="scanner-viewport" id="scannerViewport">Camera loading…</div>
+<div class="hint">Align the barcode within the frame to scan automatically.</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","cashier","staff"]);
+initBranchSelector();
+window.onBranchChange = async () => {
+    await loadProducts();
+    await loadSettings();
+    renderProducts();
+    renderCart();
+};
+
+let products = [];
+let customers = [];
+let cart = [];
+let currentFilter = "";
+let settings = {};
+
+const customerSelect = document.getElementById("customerSelect");
+const productsGrid = document.getElementById("productsGrid");
+const cartTable = document.getElementById("cartTable");
+const searchInput = document.getElementById("searchInput");
+const barcodeInput = document.getElementById("barcodeInput");
+const discountInput = document.getElementById("discount");
+const taxInput = document.getElementById("tax");
+const paymentModeSelect = document.getElementById("paymentMode");
+const tableRow = document.getElementById("tableRow");
+const tableNameInput = document.getElementById("tableName");
+const deliveryFeeInput = document.getElementById("deliveryFee");
+const packingFeeInput = document.getElementById("packingFee");
+const serviceFeeInput = document.getElementById("serviceFee");
+const otherFeeInput = document.getElementById("otherFee");
+const returnSection = document.getElementById("returnsSection");
+const returnReceiptInput = document.getElementById("returnReceipt");
+const returnBarcodeInput = document.getElementById("returnBarcode");
+const returnTable = document.getElementById("returnTable");
+const returnMeta = document.getElementById("returnMeta");
+const returnReasonInput = document.getElementById("returnReason");
+const returnTotal = document.getElementById("returnTotal");
+
+let returnSale = null;
+let returnItems = [];
+let returnSelections = {};
+let scannerInstance = null;
+let scannerActive = false;
+let scannerStarting = false;
+
+function getSupportedBarcodeFormats(){
+    if(typeof Html5QrcodeSupportedFormats === "undefined") return null;
+    const f = Html5QrcodeSupportedFormats;
+    return [
+        f.CODE_128,
+        f.EAN_13,
+        f.EAN_8,
+        f.UPC_A,
+        f.UPC_E,
+        f.QR_CODE
+    ];
+}
+
+async function stopScannerInstance(){
+    if(scannerInstance && scannerActive){
+        scannerActive = false;
+        try{ await scannerInstance.stop(); }catch(e){}
+        try{ scannerInstance.clear(); }catch(e){}
+    }
+}
+
+function ensureSecureContext(){
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if(!window.isSecureContext && !isLocal){
+        return false;
+    }
+    return true;
+}
+
+async function init(){
+    await Promise.all([loadProducts(), loadCustomers(), loadSettings()]);
+    renderCustomers();
+    renderProducts();
+    renderCart();
+    initReturnsVisibility();
+    renderReturnTable();
+    const storedReceipt = localStorage.getItem("returnReceipt");
+    if(storedReceipt && returnReceiptInput){
+        returnReceiptInput.value = storedReceipt;
+        localStorage.removeItem("returnReceipt");
+        loadReceipt();
+    }
+}
+
+async function loadSettings(){
+    try{
+        const branchParam = getActiveBranchParam();
+        const res = await apiFetch(branchParam ? `/api/settings?branch_id=${branchParam}` : "/api/settings");
+        settings = await res.json();
+        applySettings();
+    }catch(e){
+        settings = {};
+    }
+}
+
+function applySettings(){
+    if(paymentModeSelect){
+        const modes = Array.isArray(settings.payment_modes) ? settings.payment_modes : ["Cash"];
+        paymentModeSelect.innerHTML = "";
+        modes.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = m;
+            paymentModeSelect.appendChild(opt);
+        });
+    }
+    if(discountInput && settings.discount_default != null){
+        discountInput.value = Number(settings.discount_default) || 0;
+    }
+    if(taxInput && settings.tax_rate_default != null){
+        taxInput.value = Number(settings.tax_rate_default) || 0;
+    }
+    if(deliveryFeeInput) deliveryFeeInput.value = Number(settings.delivery_fee) || 0;
+    if(packingFeeInput) packingFeeInput.value = Number(settings.packing_fee) || 0;
+    if(serviceFeeInput) serviceFeeInput.value = Number(settings.service_fee) || 0;
+    if(otherFeeInput) otherFeeInput.value = Number(settings.other_fee) || 0;
+    if(tableRow){
+        tableRow.style.display = settings.table_management_enabled ? "flex" : "none";
+    }
+    updateTotalsDisplay(calculateTotals());
+}
+
+async function loadProducts(){
+    const res = await apiFetch(withBranch("/api/products"));
+    products = await res.json();
+}
+
+async function loadCustomers(){
+    const res = await apiFetch("/api/customers");
+    customers = await res.json();
+}
+
+function renderCustomers(){
+    customerSelect.innerHTML = '<option value="">-- Walk-in Customer --</option>';
+    customers.forEach(c=>{
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.name}${c.phone ? " • " + c.phone : ""}`;
+        customerSelect.appendChild(opt);
+    });
+}
+
+function renderProducts(filter){
+    currentFilter = typeof filter === "string" ? filter : currentFilter;
+    const q = (currentFilter || "").toLowerCase();
+    productsGrid.innerHTML = "";
+
+    const filtered = products.filter(p=>{
+        const bag = `${p.name} ${p.category||""} ${p.barcode||""}`.toLowerCase();
+        return !q || bag.includes(q);
+    });
+
+    if(filtered.length === 0){
+        productsGrid.innerHTML = '<div class="empty">No products found</div>';
+        return;
+    }
+
+    filtered.forEach(p=>{
+        const tile = document.createElement("div");
+        tile.className = "product-tile";
+        const reorder = Number.isFinite(Number(p.reorder_level)) ? Number(p.reorder_level) : 5;
+        if(Number(p.quantity) <= reorder) tile.classList.add("low-stock");
+        const price = getProductPrice(p);
+        tile.innerHTML = `
+            <div class="product-name">${p.name}</div>
+            <div class="product-meta">${p.category || "Uncategorized"}</div>
+            <div class="product-price">${formatKES(price)}</div>
+            <div class="product-meta">${p.quantity} in stock</div>
+        `;
+        tile.addEventListener("click", ()=> addToCart(p.id, 1));
+        productsGrid.appendChild(tile);
+    });
+}
+
+function withBranch(path){
+    const param = getActiveBranchParam();
+    return param ? `${path}?branch_id=${param}` : path;
+}
+
+function getProduct(productId){
+    return products.find(p=>p.id === productId);
+}
+
+function getProductPrice(product){
+    if(!product) return 0;
+    const override = Number(product.effective_price);
+    if(Number.isFinite(override)) return override;
+    return Number(product.price) || 0;
+}
+
+function addToCart(productId, qty){
+    const product = getProduct(productId);
+    if(!product){
+        alert("Product not found");
+        return;
+    }
+    if(qty > Number(product.quantity)){
+        alert("Not enough stock");
+        return;
+    }
+    const existing = cart.find(item => item.product_id === productId);
+    if(existing){
+        if(existing.qty + qty > Number(product.quantity)){
+            alert("Not enough stock");
+            return;
+        }
+        existing.qty += qty;
+    }else{
+        cart.push({ product_id: productId, qty });
+    }
+    renderCart();
+}
+
+function updateQty(index, value){
+    const newQty = Number(value);
+    const item = cart[index];
+    if(!item) return;
+    const product = getProduct(item.product_id);
+    if(!Number.isFinite(newQty) || newQty < 1){
+        alert("Quantity must be 1 or more");
+        renderCart();
+        return;
+    }
+    if(product && newQty > Number(product.quantity)){
+        alert("Not enough stock");
+        renderCart();
+        return;
+    }
+    item.qty = newQty;
+    renderCart();
+}
+
+function removeFromCart(index){
+    cart.splice(index,1);
+    renderCart();
+}
+
+function clearCart(){
+    cart = [];
+    renderCart();
+}
+
+function calculateTotals(){
+    let subtotal = 0;
+    cart.forEach(item=>{
+        const product = getProduct(item.product_id);
+        if(product){
+            subtotal += getProductPrice(product) * Number(item.qty);
+        }
+    });
+    const discount = Number(discountInput.value) || 0;
+    const taxRate = Number(taxInput.value) || 0;
+    const taxable = Math.max(0, subtotal - discount);
+    const tax = taxable * (taxRate / 100);
+    const fees = (Number(deliveryFeeInput.value) || 0) +
+        (Number(packingFeeInput.value) || 0) +
+        (Number(serviceFeeInput.value) || 0) +
+        (Number(otherFeeInput.value) || 0);
+    let total = taxable + tax + fees;
+    if(settings.round_off_enabled){
+        total = Math.round(total);
+    }
+    return { subtotal, discount, taxRate, tax, fees, total };
+}
+
+function updateTotalsDisplay(totals){
+    document.getElementById("cartSubtotal").innerText = formatKES(totals.subtotal);
+    document.getElementById("cartTax").innerText = formatKES(totals.tax);
+    document.getElementById("cartFees").innerText = formatKES(totals.fees || 0);
+    document.getElementById("cartTotal").innerText = formatKES(totals.total);
+    document.getElementById("cartTotalTop").innerText = formatKES(totals.total);
+    document.getElementById("cartCount").innerText = cart.reduce((sum,item)=>sum+item.qty,0);
+}
+
+function renderCart(){
+    cartTable.innerHTML = `
+        <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Subtotal</th>
+            <th>Actions</th>
+        </tr>
+    `;
+
+    if(cart.length === 0){
+        cartTable.innerHTML += '<tr><td colspan="5" class="empty">Cart is empty</td></tr>';
+        updateTotalsDisplay({ subtotal:0, tax:0, fees:0, total:0 });
+        return;
+    }
+
+    cart.forEach((item, index)=>{
+        const product = getProduct(item.product_id);
+        if(!product) return;
+        const unitPrice = getProductPrice(product);
+        const lineSubtotal = unitPrice * Number(item.qty);
+        cartTable.innerHTML += `
+            <tr>
+                <td>${product.name}</td>
+                <td>${formatKES(unitPrice)}</td>
+                <td><input type="number" min="1" value="${item.qty}" onchange="updateQty(${index}, this.value)"></td>
+                <td>${formatKES(lineSubtotal)}</td>
+                <td class="actions"><button class="button ghost" onclick="removeFromCart(${index})">Remove</button></td>
+            </tr>
+        `;
+    });
+
+    updateTotalsDisplay(calculateTotals());
+}
+
+function initReturnsVisibility(){
+    if(!currentUser || !["admin","manager","cashier"].includes(currentUser.role)){
+        if(returnSection) returnSection.style.display = "none";
+    }
+}
+
+function renderReturnTable(){
+    if(!returnTable) return;
+    returnTable.innerHTML = `
+        <tr>
+            <th>Item</th>
+            <th>Sold</th>
+            <th>Return</th>
+            <th>Price</th>
+        </tr>
+    `;
+    if(!returnSale){
+        returnTable.innerHTML += `<tr><td colspan="4" class="empty">No receipt loaded</td></tr>`;
+        if(returnTotal) returnTotal.innerText = "KES 0";
+        return;
+    }
+    if(returnItems.length === 0){
+        returnTable.innerHTML += `<tr><td colspan="4" class="empty">No items on this receipt</td></tr>`;
+        return;
+    }
+    returnItems.forEach(item=>{
+        const chosen = returnSelections[item.product_id] || 0;
+        returnTable.innerHTML += `
+            <tr>
+                <td>${item.product_name}</td>
+                <td>${item.qty}</td>
+                <td><input type="number" min="0" max="${item.qty}" value="${chosen}" onchange="updateReturnQty(${item.product_id}, this.value)"></td>
+                <td>${formatKES(item.price)}</td>
+            </tr>
+        `;
+    });
+    updateReturnTotal();
+}
+
+function updateReturnQty(productId, value){
+    const item = returnItems.find(i => Number(i.product_id) === Number(productId));
+    if(!item) return;
+    let qty = Number(value);
+    if(!Number.isFinite(qty) || qty < 0) qty = 0;
+    if(qty > Number(item.qty)){
+        alert("Return qty exceeds sold qty");
+        qty = Number(item.qty);
+    }
+    returnSelections[productId] = qty;
+    renderReturnTable();
+}
+
+function scanReturnBarcode(){
+    if(!returnBarcodeInput) return;
+    if(!returnSale){
+        alert("Load a receipt first");
+        return;
+    }
+    const code = returnBarcodeInput.value.trim();
+    if(!code) return;
+    const item = returnItems.find(i => (i.barcode || "").toLowerCase() === code.toLowerCase());
+    if(!item){
+        alert(`Barcode ${code} not found on this receipt`);
+        returnBarcodeInput.value = "";
+        return;
+    }
+    const current = returnSelections[item.product_id] || 0;
+    if(current >= Number(item.qty)){
+        alert("Return qty exceeds sold qty");
+        returnBarcodeInput.value = "";
+        return;
+    }
+    returnSelections[item.product_id] = current + 1;
+    returnBarcodeInput.value = "";
+    renderReturnTable();
+}
+
+function updateReturnTotal(){
+    const total = Object.entries(returnSelections).reduce((sum, [pid, qty])=>{
+        const item = returnItems.find(i => Number(i.product_id) === Number(pid));
+        if(!item) return sum;
+        return sum + (Number(item.price) * Number(qty || 0));
+    }, 0);
+    if(returnTotal) returnTotal.innerText = formatKES(total);
+}
+
+async function loadReceipt(){
+    if(!returnReceiptInput) return;
+    const receiptId = returnReceiptInput.value.trim();
+    if(!receiptId){
+        alert("Enter a receipt ID");
+        return;
+    }
+    const res = await apiFetch(`/api/sales/receipt/${encodeURIComponent(receiptId)}`);
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Receipt not found");
+        return;
+    }
+    returnSale = data.sale;
+    returnItems = data.items || [];
+    returnSelections = {};
+    const meta = `Customer: ${returnSale.customer_name || "Walk-in"} • Cashier: ${returnSale.cashier_name || "Staff"} • Date: ${new Date(returnSale.created_at).toLocaleString()}`;
+    if(returnMeta) returnMeta.innerText = meta;
+    renderReturnTable();
+}
+
+async function processReturn(){
+    if(!returnSale){
+        alert("Load a receipt first");
+        return;
+    }
+    const items = Object.entries(returnSelections)
+        .map(([product_id, qty]) => ({ product_id: Number(product_id), qty: Number(qty) }))
+        .filter(item => Number(item.qty) > 0);
+    if(items.length === 0){
+        alert("Select at least one item to return");
+        return;
+    }
+    const reason = returnReasonInput ? returnReasonInput.value.trim() : "";
+    const res = await apiFetch("/api/returns", {
+        method: "POST",
+        body: JSON.stringify({ receipt_id: returnSale.receipt_id, items, reason })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Return failed");
+        return;
+    }
+    alert(`Return processed. Refund ${formatKES(data.total_refund || 0)}.`);
+    returnSale = null;
+    returnItems = [];
+    returnSelections = {};
+    if(returnReceiptInput) returnReceiptInput.value = "";
+    if(returnReasonInput) returnReasonInput.value = "";
+    if(returnMeta) returnMeta.innerText = "Enter a receipt to load items for return.";
+    renderReturnTable();
+    await loadProducts();
+    renderProducts(currentFilter);
+    renderCart();
+}
+
+function handleBarcode(code){
+    if(!code) return;
+    const product = products.find(p => (p.barcode || "").toLowerCase() === code.toLowerCase());
+    if(product){
+        addToCart(product.id, 1);
+        return;
+    }
+    const shouldAdd = confirm(`Product with barcode ${code} not found. Add it now?`);
+    if(shouldAdd){
+        nav("products.html");
+    }
+}
+
+function loadScannerLibrary(){
+    if(window.Html5Qrcode) return Promise.resolve(true);
+    return new Promise((resolve) => {
+        const existing = document.querySelector('script[data-scanner-lib="html5-qrcode"]');
+        if(existing){
+            existing.addEventListener("load", () => resolve(!!window.Html5Qrcode));
+            existing.addEventListener("error", () => resolve(false));
+            return;
+        }
+        const script = document.createElement("script");
+        script.src = "vendor/html5-qrcode.min.js";
+        script.async = true;
+        script.dataset.scannerLib = "html5-qrcode";
+        script.onload = () => resolve(!!window.Html5Qrcode);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+}
+
+function openScanner(){
+    const modal = document.getElementById("scannerModal");
+    modal.classList.add("open");
+    const viewport = document.getElementById("scannerViewport");
+    loadScannerLibrary().then((ok) => {
+        if(!ok || !window.Html5Qrcode){
+            alert("Camera scanner library not loaded. Check your internet connection.");
+            closeScanner();
+            return;
+        }
+        startScannerFlow();
+    });
+}
+
+function startScannerFlow(){
+    const viewport = document.getElementById("scannerViewport");
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        alert("Camera not supported in this browser.");
+        closeScanner();
+        return;
+    }
+    if(!ensureSecureContext()){
+        alert("Camera access needs HTTPS or http://localhost. Open the app using the local server.");
+        closeScanner();
+        return;
+    }
+    if(scannerStarting || scannerActive) return;
+    scannerStarting = true;
+    viewport.textContent = "Requesting camera access...";
+    Html5Qrcode.getCameras().then(async (cameras) => {
+        if(!cameras || cameras.length === 0){
+            throw new Error("No cameras found");
+        }
+        if(!scannerInstance){
+            scannerInstance = new Html5Qrcode("scannerViewport");
+        }
+        const preferred = cameras.find(cam => /back|rear|environment/i.test(cam.label));
+        const cameraId = (preferred || cameras[0]).id;
+        const config = { fps: 12, qrbox: { width: 260, height: 160 }, aspectRatio: 1.777 };
+        const formats = getSupportedBarcodeFormats();
+        if(formats) config.formatsToSupport = formats;
+        viewport.innerHTML = "";
+        await scannerInstance.start(
+            cameraId,
+            config,
+            (decodedText) => {
+                handleBarcode(decodedText);
+                closeScanner();
+            },
+            () => {}
+        );
+        scannerActive = true;
+    }).catch((err) => {
+        const msg = err && err.message ? err.message : "Unable to access camera. Check permissions.";
+        alert(msg);
+        closeScanner();
+    }).finally(() => {
+        scannerStarting = false;
+    });
+}
+
+function closeScanner(){
+    const modal = document.getElementById("scannerModal");
+    modal.classList.remove("open");
+    stopScannerInstance();
+}
+
+searchInput.addEventListener("input", ()=> renderProducts(searchInput.value));
+[discountInput, taxInput, deliveryFeeInput, packingFeeInput, serviceFeeInput, otherFeeInput].forEach(input=>{
+    input.addEventListener("input", ()=> updateTotalsDisplay(calculateTotals()));
+});
+
+barcodeInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){
+        e.preventDefault();
+        const code = barcodeInput.value.trim();
+        if(!code) return;
+        handleBarcode(code);
+        barcodeInput.value = "";
+    }
+});
+
+if(returnBarcodeInput){
+    returnBarcodeInput.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter"){
+            e.preventDefault();
+            scanReturnBarcode();
+        }
+    });
+}
+
+document.addEventListener("click", (e)=>{
+    const tag = e.target.tagName;
+    if(tag !== "INPUT" && tag !== "SELECT" && tag !== "TEXTAREA"){
+        barcodeInput.focus();
+    }
+});
+
+async function completeSale(){
+    if(cart.length === 0){
+        alert("Cart is empty");
+        return;
+    }
+
+    const branchId = getActiveBranchId();
+    if(!branchId){
+        alert("Select a branch before completing the sale");
+        return;
+    }
+    const totals = calculateTotals();
+    const items = cart.map(item => ({ product_id: item.product_id, qty: item.qty }));
+    const customerId = customerSelect.value ? Number(customerSelect.value) : null;
+    const paymentMode = paymentModeSelect ? paymentModeSelect.value : "";
+    const tableName = tableNameInput ? tableNameInput.value.trim() : "";
+    const receiptItems = cart.map(item=>{
+        const product = getProduct(item.product_id);
+        const price = product ? getProductPrice(product) : 0;
+        return {
+            name: product ? product.name : "Item",
+            qty: item.qty,
+            price,
+            subtotal: price * item.qty
+        };
+    });
+
+    try{
+        const res = await apiFetch("/api/sales", {
+            method: "POST",
+            body: JSON.stringify({
+                customer_id: customerId,
+                items,
+                discount: totals.discount,
+                tax: totals.taxRate,
+                branch_id: branchId,
+                payment_mode: paymentMode,
+                table_name: tableName || null,
+                fees: {
+                    delivery: Number(deliveryFeeInput.value) || 0,
+                    packing: Number(packingFeeInput.value) || 0,
+                    service: Number(serviceFeeInput.value) || 0,
+                    other: Number(otherFeeInput.value) || 0
+                }
+            })
+        });
+        const data = await res.json();
+        if(!res.ok){
+            alert(data.error || "Checkout failed");
+            return;
+        }
+
+        const receiptId = data.receiptId || `RCPT${Date.now()}`;
+        const saleTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : totals.total;
+        openReceiptWindow(receiptId, saleTotal, totals, receiptItems, paymentMode, tableName);
+
+        cart = [];
+        discountInput.value = settings.discount_default || 0;
+        taxInput.value = settings.tax_rate_default || 0;
+        deliveryFeeInput.value = settings.delivery_fee || 0;
+        packingFeeInput.value = settings.packing_fee || 0;
+        serviceFeeInput.value = settings.service_fee || 0;
+        otherFeeInput.value = settings.other_fee || 0;
+        await loadProducts();
+        renderProducts(currentFilter);
+        renderCart();
+    }catch(err){
+        alert("Unable to complete sale");
+    }
+}
+
+function openReceiptWindow(receiptId, total, totals, items, paymentMode, tableName){
+    const customer = customerSelect.value ? customers.find(c=>c.id === Number(customerSelect.value)) : null;
+    const customerName = customer ? customer.name : "Walk-in";
+    const cashier = currentUser ? currentUser.name : "Staff";
+    const fmt = (n)=> Number(n || 0).toFixed(2);
+
+    const footer = settings.receipt_footer || "Thank you for shopping!";
+    let content = `
+        <div style="font-family:Sora,sans-serif;width:320px;">
+            <h2 style="text-align:center;margin-bottom:8px;">SmartInventory Pro</h2>
+            <p style="font-size:12px;line-height:1.5;">
+                <strong>Customer:</strong> ${customerName}<br>
+                <strong>Cashier:</strong> ${cashier}<br>
+                ${tableName ? `<strong>Table:</strong> ${tableName}<br>` : ""}
+                ${paymentMode ? `<strong>Payment:</strong> ${paymentMode}<br>` : ""}
+                <strong>Date:</strong> ${new Date().toLocaleString()}<br>
+                <strong>Receipt ID:</strong> ${receiptId}
+            </p>
+            <table border="1" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">
+                <tr><th style="padding:6px;">Item</th><th style="padding:6px;">Qty</th><th style="padding:6px;">Price</th><th style="padding:6px;">Subtotal</th></tr>
+    `;
+
+    items.forEach(item=>{
+        content += `
+            <tr>
+                <td style="padding:6px;">${item.name}</td>
+                <td style="padding:6px;">${item.qty}</td>
+                <td style="padding:6px;">KES ${fmt(item.price)}</td>
+                <td style="padding:6px;">KES ${fmt(item.subtotal)}</td>
+            </tr>
+        `;
+    });
+
+    content += `
+            </table>
+            <p style="font-size:12px;margin-top:10px;">
+                Subtotal: KES ${fmt(totals.subtotal)}<br>
+                Discount: KES ${fmt(totals.discount)}<br>
+                Tax (${totals.taxRate}%): KES ${fmt(totals.tax)}<br>
+                Fees: KES ${fmt(totals.fees)}<br>
+                <strong>Total: KES ${fmt(total)}</strong>
+            </p>
+            <svg id="barcode"></svg>
+            <p style="text-align:center;font-size:12px;margin-top:8px;">${footer}</p>
+        </div>
+    `;
+
+    const w = window.open("", "", "width=400,height=650");
+    if(!w) return;
+    w.document.write(content);
+    w.document.close();
+    JsBarcode(w.document.getElementById("barcode"), receiptId, {
+        format: "CODE128", width: 2, height: 50, displayValue: true
+    });
+    w.print();
+    w.close();
+}
+
+init();
+</script>
+</body>
+</html>

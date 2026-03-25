@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suppliers — SmartInventory Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.content{padding:25px;}
+
+.form-box,.table-box{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:25px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+
+input,select{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+button{
+    padding:10px 15px;
+    background:#2c5364;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button.secondary{background:#ff9800;}
+.edit-btn{background:orange;}
+.delete-btn{background:red;}
+
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+
+<div class="topbar">
+<h3>Suppliers Management</h3>
+<div id="userBadge">👤 Admin</div>
+</div>
+
+<div class="content">
+
+<div class="form-box">
+
+<h3 id="formTitle">Add Supplier</h3>
+
+<div class="form-grid">
+<input id="name" placeholder="Supplier Name">
+<input id="contact" placeholder="Contact Person">
+<input id="phone" placeholder="Phone">
+<input id="email" placeholder="Email">
+<input id="address" placeholder="Address">
+<input id="leadTime" type="number" min="0" placeholder="Lead time (days)">
+<select id="status">
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+</div>
+
+<button id="saveBtn" onclick="saveSupplier()">Add Supplier</button>
+<button class="secondary" type="button" onclick="clearForm()">Clear</button>
+
+</div>
+
+<div class="table-box">
+
+<h3>Supplier List</h3>
+<input id="searchInput" placeholder="Search suppliers" oninput="renderSuppliers()">
+
+<table id="supplierTable">
+
+<tr>
+<th>Name</th>
+<th>Contact</th>
+<th>Phone</th>
+<th>Email</th>
+<th>Address</th>
+<th>Lead Time</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+
+</table>
+
+</div>
+
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager"]);
+let suppliers = [];
+let editIndex = -1;
+
+async function loadSuppliers(){
+    const res = await apiFetch("/api/suppliers");
+    suppliers = await res.json();
+    renderSuppliers();
+}
+
+function renderSuppliers(){
+    const table = document.getElementById("supplierTable");
+    const q = document.getElementById("searchInput").value.toLowerCase();
+
+    table.innerHTML = `
+    <tr>
+    <th>Name</th>
+    <th>Contact</th>
+    <th>Phone</th>
+    <th>Email</th>
+    <th>Address</th>
+    <th>Lead Time</th>
+    <th>Status</th>
+    <th>Actions</th>
+    </tr>
+    `;
+
+    const filtered = suppliers.filter(s=>{
+        const bag = `${s.name} ${s.contact||""} ${s.phone||""} ${s.email||""} ${s.address||""}`.toLowerCase();
+        return !q || bag.includes(q);
+    });
+
+    if(filtered.length === 0){
+        table.innerHTML += `<tr><td colspan="8" class="empty">No suppliers found</td></tr>`;
+        return;
+    }
+
+    filtered.forEach((s)=>{
+        const idx = suppliers.indexOf(s);
+        const lead = Number.isFinite(Number(s.lead_time)) ? `${s.lead_time} days` : "-";
+        table.innerHTML += `
+        <tr>
+        <td>${s.name}</td>
+        <td>${s.contact || "-"}</td>
+        <td>${s.phone || "-"}</td>
+        <td>${s.email || "-"}</td>
+        <td>${s.address || "-"}</td>
+        <td>${lead}</td>
+        <td>${s.status || "active"}</td>
+        <td>
+        <button class="edit-btn" onclick="editSupplier(${idx})">Edit</button>
+        <button class="delete-btn" onclick="deleteSupplier(${idx})">Delete</button>
+        </td>
+        </tr>
+        `;
+    });
+}
+
+async function saveSupplier(){
+    const name=document.getElementById("name").value.trim();
+    const contact=document.getElementById("contact").value.trim();
+    const phone=document.getElementById("phone").value.trim();
+    const email=document.getElementById("email").value.trim();
+    const address=document.getElementById("address").value.trim();
+    const leadInput=document.getElementById("leadTime").value;
+    const status=document.getElementById("status").value;
+    const leadTime = leadInput === "" ? null : Number(leadInput);
+
+    if(!name || !phone || !email){alert("Name, phone, and email are required"); return;}
+    if(leadTime !== null && (!Number.isFinite(leadTime) || leadTime < 0)){alert("Lead time must be 0 or more"); return;}
+
+    const payload = { name, contact, phone, email, address, lead_time: leadTime, status };
+
+    if(editIndex === -1){
+        const res = await apiFetch("/api/suppliers", { method:"POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to add supplier"); return;}
+    }else{
+        const supplier = suppliers[editIndex];
+        const res = await apiFetch(`/api/suppliers/${supplier.id}`, { method:"PUT", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to update supplier"); return;}
+        editIndex = -1;
+        document.getElementById("saveBtn").innerText = "Add Supplier";
+        document.getElementById("formTitle").innerText = "Add Supplier";
+    }
+
+    clearForm();
+    await loadSuppliers();
+}
+
+function editSupplier(i){
+    const s = suppliers[i];
+    document.getElementById("name").value = s.name || "";
+    document.getElementById("contact").value = s.contact || "";
+    document.getElementById("phone").value = s.phone || "";
+    document.getElementById("email").value = s.email || "";
+    document.getElementById("address").value = s.address || "";
+    document.getElementById("leadTime").value = Number.isFinite(Number(s.lead_time)) ? s.lead_time : "";
+    document.getElementById("status").value = s.status || "active";
+    editIndex = i;
+    document.getElementById("saveBtn").innerText = "Update Supplier";
+    document.getElementById("formTitle").innerText = "Edit Supplier";
+}
+
+async function deleteSupplier(i){
+    if(!confirm("Delete this supplier?")) return;
+    const supplier = suppliers[i];
+    const res = await apiFetch(`/api/suppliers/${supplier.id}`, { method:"DELETE" });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Delete failed"); return;}
+    await loadSuppliers();
+}
+
+function clearForm(){
+    document.querySelectorAll(".form-box input").forEach(i=>i.value="");
+    document.getElementById("status").value = "active";
+    editIndex = -1;
+    document.getElementById("saveBtn").innerText = "Add Supplier";
+    document.getElementById("formTitle").innerText = "Add Supplier";
+}
+
+loadSuppliers();
+</script>
+
+</body>
+</html>

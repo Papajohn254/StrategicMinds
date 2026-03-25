@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Portal — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Sora",sans-serif;}
+body{display:flex;min-height:100vh;background:#f6f4ef;color:#0f172a;}
+.sidebar{width:240px;background:linear-gradient(180deg,#0f4c5c 0%, #0b2f35 100%);color:white;padding:24px;display:flex;flex-direction:column;gap:18px;}
+.sidebar h2{text-align:center;}
+.sidebar ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.sidebar ul li{padding:10px 12px;border-radius:10px;cursor:pointer;}
+.sidebar ul li:hover{background:rgba(255,255,255,0.12);}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;gap:10px;flex-wrap:wrap;}
+.content{padding:0 28px 28px;display:grid;gap:20px;}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 18px 45px rgba(15,23,42,0.08);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;}
+input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e2dc;}
+button{padding:10px 12px;border:none;border-radius:10px;background:#0ea5a4;color:#fff;font-weight:600;cursor:pointer;}
+button.secondary{background:#e2e8f0;color:#0f172a;}
+.table{width:100%;border-collapse:collapse;margin-top:10px;}
+.table th,.table td{padding:10px;border-bottom:1px solid #e6e2dc;text-align:left;font-size:13px;}
+.table th{background:#f8fafc;}
+.note{font-size:12px;color:#5b6770;}
+.badge{background:#0f172a;color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;}
+@media(max-width:900px){.sidebar{display:none;}.content{padding:0 20px 24px;}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h2>SmartInventory</h2>
+  <ul>
+    <li id="navVendorPortal">Vendor Portal</li>
+    <li onclick="logout()">Logout</li>
+  </ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h3>Vendor Portal</h3>
+      <p class="note">Post products for the online store after approval.</p>
+    </div>
+    <div class="badge" id="userBadge">Loading...</div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <h4>Analytics</h4>
+      <div class="note">Summary of your products and online sales.</div>
+      <div class="form-grid">
+        <div><div class="note">Total Products</div><strong id="statProducts">0</strong></div>
+        <div><div class="note">Published</div><strong id="statPublished">0</strong></div>
+        <div><div class="note">Total Stock</div><strong id="statStock">0</strong></div>
+        <div><div class="note">Online Orders</div><strong id="statOrders">0</strong></div>
+        <div><div class="note">Online Revenue</div><strong id="statRevenue">KES 0</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <h4 id="formTitle">Add Product</h4>
+      <div class="form-grid">
+        <input id="name" placeholder="Product name">
+        <input id="category" placeholder="Category">
+        <input id="price" type="number" placeholder="Selling price">
+        <input id="costPrice" type="number" placeholder="Cost price">
+        <input id="quantity" type="number" placeholder="Quantity">
+        <input id="barcode" placeholder="Barcode (optional)">
+        <label class="note" style="display:flex;align-items:center;gap:8px;">
+          <input id="isPublished" type="checkbox" checked> Show on customer portal
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <button onclick="saveProduct()">Save Product</button>
+        <button class="secondary" onclick="clearForm()">Clear</button>
+      </div>
+      <div id="status" class="note" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <h4>Your Products</h4>
+      <input id="searchInput" placeholder="Search products" oninput="renderProducts()">
+      <table class="table" id="productTable">
+        <tr><th>Name</th><th>Category</th><th>Price</th><th>Qty</th><th>Published</th><th>Actions</th></tr>
+      </table>
+      <div id="emptyState" class="note"></div>
+    </div>
+    <div class="card">
+      <h4>Supplier Order Inbox</h4>
+      <div class="note">Purchase orders from branches.</div>
+      <table class="table" id="poTable">
+        <tr><th>PO</th><th>Product</th><th>Qty</th><th>Branch</th><th>ETA</th><th>Status</th><th>Update</th></tr>
+      </table>
+      <div id="poEmpty" class="note"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["supplier","seller","retailer","wholesaler"]);
+let products = [];
+let editIndex = -1;
+
+async function loadAnalytics(){
+  const res = await apiFetch("/api/vendor/analytics");
+  const data = await res.json();
+  if(!res.ok) return;
+  document.getElementById("statProducts").textContent = data.total_products || 0;
+  document.getElementById("statPublished").textContent = data.published_products || 0;
+  document.getElementById("statStock").textContent = data.total_stock || 0;
+  document.getElementById("statOrders").textContent = data.online_orders || 0;
+  document.getElementById("statRevenue").textContent = formatKES(data.online_revenue || 0);
+}
+
+async function loadPurchaseOrders(){
+  const res = await apiFetch("/api/vendor/purchase-orders");
+  const orders = await res.json();
+  const table = document.getElementById("poTable");
+  table.innerHTML = `<tr><th>PO</th><th>Product</th><th>Qty</th><th>Branch</th><th>ETA</th><th>Status</th><th>Update</th></tr>`;
+  if(!orders.length){
+    table.innerHTML += `<tr><td colspan="7" class="note">No purchase orders yet.</td></tr>`;
+    return;
+  }
+  orders.forEach(o => {
+    const options = ["Pending","Confirmed","Dispatched","Delivered"].map(s => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("");
+    table.innerHTML += `<tr>
+      <td>${o.po_number}</td>
+      <td>${o.product_name || "-"}</td>
+      <td>${o.qty}</td>
+      <td>${o.branch_name || "-"}</td>
+      <td>${o.eta_date}</td>
+      <td>${o.status}</td>
+      <td>
+        <select data-po="${o.id}">${options}</select>
+        <button onclick="updatePOStatus(${o.id})">Update</button>
+      </td>
+    </tr>`;
+  });
+}
+
+async function updatePOStatus(id){
+  const select = document.querySelector(`select[data-po="${id}"]`);
+  if(!select) return;
+  const status = select.value;
+  const res = await apiFetch(`/api/vendor/purchase-orders/${id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Update failed");
+    return;
+  }
+  loadPurchaseOrders();
+}
+
+async function loadProducts(){
+  const res = await apiFetch("/api/products");
+  products = await res.json();
+  renderProducts();
+}
+
+function renderProducts(){
+  const table = document.getElementById("productTable");
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  table.innerHTML = `<tr><th>Name</th><th>Category</th><th>Price</th><th>Qty</th><th>Published</th><th>Actions</th></tr>`;
+  const filtered = products.filter(p => !q || `${p.name} ${p.category}`.toLowerCase().includes(q));
+  if(filtered.length === 0){
+    table.innerHTML += `<tr><td colspan="6" class="note">No products found.</td></tr>`;
+    return;
+  }
+  filtered.forEach(p => {
+    const i = products.indexOf(p);
+    const published = Number(p.is_published) === 0 ? "Hidden" : "Visible";
+    table.innerHTML += `<tr>
+      <td>${p.name}</td>
+      <td>${p.category || "-"}</td>
+      <td>${formatKES(p.price)}</td>
+      <td>${p.quantity}</td>
+      <td>${published}</td>
+      <td>
+        <button class="secondary" onclick="editProduct(${i})">Edit</button>
+        <button onclick="deleteProduct(${i})">Delete</button>
+      </td>
+    </tr>`;
+  });
+}
+
+async function saveProduct(){
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    category: document.getElementById("category").value.trim(),
+    price: Number(document.getElementById("price").value),
+    cost_price: Number(document.getElementById("costPrice").value || 0),
+    quantity: Number(document.getElementById("quantity").value || 0),
+    barcode: document.getElementById("barcode").value.trim() || undefined,
+    is_published: document.getElementById("isPublished").checked ? 1 : 0
+  };
+  const status = document.getElementById("status");
+  if(!payload.name || !payload.category || !payload.price){
+    status.textContent = "Fill name, category, and price.";
+    return;
+  }
+  try{
+    if(editIndex === -1){
+      const res = await apiFetch("/api/products", { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json();
+      if(!res.ok){ status.textContent = data.error || "Create failed"; return; }
+    }else{
+      const product = products[editIndex];
+      const res = await apiFetch(`/api/products/${product.id}`, { method: "PUT", body: JSON.stringify(payload) });
+      const data = await res.json();
+      if(!res.ok){ status.textContent = data.error || "Update failed"; return; }
+      editIndex = -1;
+      document.getElementById("formTitle").textContent = "Add Product";
+    }
+    status.textContent = "Saved successfully.";
+    clearForm();
+    await loadProducts();
+  }catch(e){
+    status.textContent = "Server error.";
+  }
+}
+
+function editProduct(i){
+  const p = products[i];
+  document.getElementById("name").value = p.name;
+  document.getElementById("category").value = p.category || "";
+  document.getElementById("price").value = p.price;
+  document.getElementById("costPrice").value = p.cost_price || 0;
+  document.getElementById("quantity").value = p.quantity;
+  document.getElementById("barcode").value = p.barcode || "";
+  document.getElementById("isPublished").checked = Number(p.is_published) !== 0;
+  editIndex = i;
+  document.getElementById("formTitle").textContent = "Edit Product";
+}
+
+async function deleteProduct(i){
+  const p = products[i];
+  if(!confirm("Delete this product?")) return;
+  const res = await apiFetch(`/api/products/${p.id}`, { method: "DELETE" });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Delete failed");
+    return;
+  }
+  await loadProducts();
+}
+
+function clearForm(){
+  document.getElementById("name").value = "";
+  document.getElementById("category").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("costPrice").value = "";
+  document.getElementById("quantity").value = "";
+  document.getElementById("barcode").value = "";
+  document.getElementById("isPublished").checked = true;
+  editIndex = -1;
+  document.getElementById("formTitle").textContent = "Add Product";
+}
+
+loadProducts();
+loadAnalytics();
+loadPurchaseOrders();
+</script>
+</body>
+</html>

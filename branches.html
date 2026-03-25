@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branches — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.content{padding:25px;}
+.form-box{background:white;padding:20px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+input,select{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
+button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;margin-top:5px;}
+button:hover{background:#203a43;}
+button.secondary{background:#ff9800;}
+.edit-btn{background:orange;}
+.delete-btn{background:red;}
+.table-box{background:white;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#777;padding:20px;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Branches</h3>
+<div id="userBadge">👤 Admin</div>
+</div>
+
+<div class="content">
+<div class="form-box">
+<h3 id="formTitle">Add Branch</h3>
+<div class="form-grid">
+<input id="name" placeholder="Branch Name">
+<input id="location" placeholder="Location">
+<input id="manager" placeholder="Manager Name">
+<input id="phone" placeholder="Phone">
+<input id="email" placeholder="Email">
+<select id="status">
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+</div>
+<button id="saveBtn" onclick="saveBranch()">Add Branch</button>
+<button class="secondary" type="button" onclick="clearForm()">Clear</button>
+</div>
+
+<div class="table-box">
+<h3>Branch Directory</h3>
+<input id="searchInput" placeholder="Search branches" oninput="renderBranches()">
+<table id="branchTable">
+<tr><th>Name</th><th>Location</th><th>Manager</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+</table>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager"]);
+let branches = [];
+let editIndex = -1;
+
+async function loadBranches(){
+    const res = await apiFetch("/api/branches");
+    branches = await res.json();
+    renderBranches();
+}
+
+async function saveBranch(){
+    const name = document.getElementById("name").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const manager_name = document.getElementById("manager").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const status = document.getElementById("status").value;
+
+    if(!name){alert("Branch name is required"); return;}
+
+    const payload = { name, location, manager_name, phone, email, status };
+
+    if(editIndex === -1){
+        const res = await apiFetch("/api/branches", { method:"POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to add branch"); return;}
+    }else{
+        const branch = branches[editIndex];
+        const res = await apiFetch(`/api/branches/${branch.id}`, { method:"PUT", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to update branch"); return;}
+        editIndex = -1;
+        document.getElementById("saveBtn").innerText = "Add Branch";
+        document.getElementById("formTitle").innerText = "Add Branch";
+    }
+
+    clearForm();
+    await loadBranches();
+}
+
+function renderBranches(){
+    const table = document.getElementById("branchTable");
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    table.innerHTML = `<tr><th>Name</th><th>Location</th><th>Manager</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr>`;
+
+    const filtered = branches.filter(b=>{
+        const bag = `${b.name} ${b.location||""} ${b.manager_name||""} ${b.phone||""} ${b.email||""}`.toLowerCase();
+        return !q || bag.includes(q);
+    });
+
+    if(filtered.length === 0){
+        table.innerHTML += `<tr><td colspan="7" class="empty">No branches found</td></tr>`;
+        return;
+    }
+
+    filtered.forEach((b)=>{
+        const idx = branches.indexOf(b);
+        table.innerHTML += `
+        <tr>
+        <td>${b.name}</td>
+        <td>${b.location || "-"}</td>
+        <td>${b.manager_name || "-"}</td>
+        <td>${b.phone || "-"}</td>
+        <td>${b.email || "-"}</td>
+        <td>${b.status || "active"}</td>
+        <td>
+        <button class="edit-btn" onclick="editBranch(${idx})">Edit</button>
+        <button class="delete-btn" onclick="deleteBranch(${idx})">Delete</button>
+        </td>
+        </tr>`;
+    });
+}
+
+function editBranch(i){
+    const b = branches[i];
+    document.getElementById("name").value = b.name || "";
+    document.getElementById("location").value = b.location || "";
+    document.getElementById("manager").value = b.manager_name || "";
+    document.getElementById("phone").value = b.phone || "";
+    document.getElementById("email").value = b.email || "";
+    document.getElementById("status").value = b.status || "active";
+    editIndex = i;
+    document.getElementById("saveBtn").innerText = "Update Branch";
+    document.getElementById("formTitle").innerText = "Edit Branch";
+}
+
+async function deleteBranch(i){
+    const branch = branches[i];
+    if(!confirm("Delete this branch?")) return;
+    const res = await apiFetch(`/api/branches/${branch.id}`, { method:"DELETE" });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Delete failed"); return;}
+    await loadBranches();
+}
+
+function clearForm(){
+    document.querySelectorAll(".form-box input").forEach(i=>i.value="");
+    document.getElementById("status").value = "active";
+    editIndex = -1;
+    document.getElementById("saveBtn").innerText = "Add Branch";
+    document.getElementById("formTitle").innerText = "Add Branch";
+}
+
+loadBranches();
+</script>
+
+</body>
+</html>

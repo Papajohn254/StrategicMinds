@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Display — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;display:grid;gap:20px;}
+.section{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.note{font-size:12px;color:#666;}
+.button{padding:10px 14px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+.button.secondary{background:#ff9800;}
+.orders-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.order-card{border:1px solid #e7edf1;border-radius:12px;padding:14px;background:#fbfcfd;display:grid;gap:10px;}
+.order-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.order-top h4{color:#2c5364;font-size:15px;}
+.tag{background:#e8f0f5;color:#2c5364;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.items{list-style:none;display:grid;gap:6px;}
+.items li{font-size:13px;color:#444;}
+.accessories-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px;}
+.accessory-card{border:1px solid #e7edf1;border-radius:10px;padding:12px;background:#fbfcfd;}
+.accessory-card h4{font-size:14px;color:#2c5364;margin-bottom:6px;}
+.status-pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#e8f0f5;color:#2c5364;font-size:11px;font-weight:600;}
+.empty{text-align:center;color:#888;padding:20px;}
+@media(max-width:900px){
+  .sidebar{display:none;}
+  body{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>Kitchen Display</h3>
+<span class="note">Live prep queue for recent sales.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 User</div>
+</div>
+</div>
+
+<div class="content">
+<div class="section">
+<div class="section-head">
+<div>
+<h3>Active Orders</h3>
+<span class="note">Auto-refreshes every 30 seconds.</span>
+</div>
+<button class="button secondary" onclick="loadKitchenOrders()">Refresh Now</button>
+</div>
+<div id="kitchenStatus" class="note"></div>
+<div id="ordersGrid" class="orders-grid"></div>
+<div id="ordersEmpty" class="empty" style="display:none;">No kitchen orders yet.</div>
+</div>
+
+<div class="section">
+<h3>Kitchen Accessories</h3>
+<span class="note">Connected devices for kitchen operations.</span>
+<div class="accessories-grid">
+<div class="accessory-card">
+<h4>Kitchen Display</h4>
+<div id="accessoryDisplay" class="status-pill">Checking…</div>
+</div>
+<div class="accessory-card">
+<h4>Kitchen Printer</h4>
+<div id="accessoryPrinter" class="status-pill">Checking…</div>
+<div class="note" id="accessoryPrinterName"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","storekeeper","cashier"]);
+initBranchSelector();
+window.onBranchChange = () => {
+  loadSettings();
+  loadKitchenOrders();
+};
+
+let kitchenEnabled = true;
+let refreshTimer = null;
+
+async function loadSettings(){
+  try{
+    const branchParam = getActiveBranchParam();
+    const res = await apiFetch(branchParam ? `/api/settings?branch_id=${branchParam}` : "/api/settings");
+    const settings = await res.json();
+    kitchenEnabled = settings.kitchen_display_enabled === true;
+    const status = document.getElementById("kitchenStatus");
+    status.textContent = kitchenEnabled ? "Kitchen display is active." : "Kitchen display is disabled in Settings.";
+    document.getElementById("accessoryDisplay").textContent = kitchenEnabled ? "Enabled" : "Disabled";
+    const printerOn = settings.printer_enabled === true;
+    document.getElementById("accessoryPrinter").textContent = printerOn ? "Enabled" : "Disabled";
+    document.getElementById("accessoryPrinterName").textContent = printerOn && settings.printer_name ? `Printer: ${settings.printer_name}` : "";
+  }catch(e){
+    // ignore
+  }
+}
+
+async function loadKitchenOrders(){
+  if(!kitchenEnabled){
+    document.getElementById("ordersGrid").innerHTML = "";
+    document.getElementById("ordersEmpty").style.display = "block";
+    return;
+  }
+  const branchParam = getActiveBranchParam();
+  const res = await apiFetch(branchParam ? `/api/kitchen/orders?branch_id=${branchParam}` : "/api/kitchen/orders");
+  const orders = await res.json();
+  const grid = document.getElementById("ordersGrid");
+  grid.innerHTML = "";
+  document.getElementById("ordersEmpty").style.display = orders.length ? "none" : "block";
+  orders.forEach(order => {
+    const card = document.createElement("div");
+    card.className = "order-card";
+    const itemsList = order.items && order.items.length
+      ? order.items.map(item => `<li>${item.qty} x ${item.name}</li>`).join("")
+      : "<li>No items</li>";
+    card.innerHTML = `
+      <div class="order-top">
+        <div>
+          <h4>Receipt ${order.receipt_id || "#" + order.id}</h4>
+          <div class="note">${new Date(order.created_at).toLocaleString()}</div>
+        </div>
+        <span class="tag">Order ${order.id}</span>
+      </div>
+      <ul class="items">${itemsList}</ul>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(loadKitchenOrders, 30000);
+}
+
+loadSettings();
+loadKitchenOrders();
+startAutoRefresh();
+</script>
+</body>
+</html>

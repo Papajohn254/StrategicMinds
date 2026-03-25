@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Products — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;}
+.form-box{background:white;padding:20px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+input,select{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
+button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;margin-top:5px;}
+button:hover{background:#203a43;}
+button.secondary{background:#ff9800;}
+.edit-btn{background:orange;}
+.delete-btn{background:red;}
+.table-box{background:white;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#777;padding:20px;}
+.note{color:#666;font-size:12px;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Products Management</h3>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+<div class="content">
+
+<div class="form-box" id="productForm">
+<h3 id="formTitle">Add New Product</h3>
+<div class="form-grid">
+<input id="name" placeholder="Product Name">
+<input id="category" placeholder="Category">
+<input id="price" type="number" placeholder="Price">
+<input id="costPrice" type="number" placeholder="Cost Price">
+<input id="quantity" type="number" placeholder="Quantity">
+<select id="supplier"></select>
+<select id="warehouse"></select>
+<input id="reorderLevel" type="number" min="0" placeholder="Reorder level (units)">
+<input id="minStock" type="number" min="0" placeholder="Min stock">
+<input id="maxStock" type="number" min="0" placeholder="Max stock">
+<input id="safetyStock" type="number" min="0" placeholder="Safety stock">
+<input id="leadTime" type="number" min="0" placeholder="Lead time (days)">
+<input id="batchNo" placeholder="Batch No">
+<input id="expiryDate" type="date" placeholder="Expiry Date">
+<input id="barcode" placeholder="Barcode (optional)">
+<label class="note" style="display:flex;align-items:center;gap:8px;">
+  <input id="isPublished" type="checkbox" checked>
+  Show on customer portal
+</label>
+</div>
+<button class="secondary" type="button" onclick="generateBarcode()">Generate Barcode</button>
+<button id="saveBtn" onclick="saveProduct()">Add Product</button>
+</div>
+
+<div class="form-box">
+<h3>CSV Import</h3>
+<input type="file" id="csvFile" accept=".csv">
+<div>
+<button class="secondary" type="button" onclick="downloadTemplate()">Download Template</button>
+<button type="button" onclick="importCsv()">Import CSV</button>
+</div>
+<p class="note">Headers: name, category, price, cost_price, quantity, supplier, warehouse, barcode, reorder_level, min_stock, max_stock, safety_stock, lead_time, batch_no, expiry_date, is_published</p>
+</div>
+
+<div class="form-box">
+<h3>Barcode Labels</h3>
+<div class="form-grid">
+<select id="labelProduct"></select>
+<input id="labelQty" type="number" min="1" value="1" placeholder="Labels to print">
+</div>
+<button type="button" onclick="printLabels()">Print Labels</button>
+<p class="note">Includes product name, price, and barcode for sticker printing.</p>
+</div>
+
+<div class="form-box">
+<h3>Bulk Barcode Tools</h3>
+<div class="form-grid">
+<input id="bulkLabelQty" type="number" min="1" value="1" placeholder="Labels per product">
+<select id="bulkFilterMode">
+<option value="all">All Products</option>
+<option value="filtered">Filtered (search)</option>
+<option value="low">Low Stock Only</option>
+</select>
+</div>
+<button type="button" onclick="generateMissingBarcodes()">Generate Missing Barcodes</button>
+<button type="button" onclick="printBulkLabels()">Print Bulk Labels</button>
+<button type="button" onclick="printShelfLabels()">Print Shelf Labels</button>
+<p class="note">Bulk printing uses the current branch list. Low stock is based on min stock or reorder level.</p>
+</div>
+
+<div class="form-box">
+<h3>Branch Price Overrides</h3>
+<div class="form-grid">
+<select id="overrideProduct"></select>
+<select id="overrideBranch"></select>
+<input id="overridePrice" type="number" placeholder="Override Price">
+<input id="overrideCost" type="number" placeholder="Override Cost Price">
+</div>
+<button id="saveOverrideBtn" onclick="saveOverride()">Save Override</button>
+<div class="table-box" style="margin-top:15px;box-shadow:none;padding:0;">
+<table id="overrideTable">
+<tr><th>Product</th><th>Branch</th><th>Price</th><th>Cost</th><th>Updated</th><th>Actions</th></tr>
+</table>
+</div>
+</div>
+
+<div class="table-box">
+<h3>Product List</h3>
+<input id="searchInput" placeholder="Search products" oninput="renderProducts()">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0;">
+  <button class="delete-btn" type="button" onclick="deleteSelected()">Delete Selected</button>
+  <button class="secondary" type="button" onclick="selectAllVisible()">Select All</button>
+  <button type="button" onclick="clearSelection()">Clear Selection</button>
+  <span id="selectedCount" class="note"></span>
+</div>
+<table id="productTable">
+<tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>Name</th><th>Category</th><th>Visible</th><th>Branch</th><th>Warehouse</th><th>Supplier</th><th>Price</th><th>Cost</th><th>Qty</th><th>Reorder</th><th>Min</th><th>Max</th><th>Safety</th><th>Lead</th><th>Batch</th><th>Expiry</th><th>Barcode</th><th>Actions</th></tr>
+</table>
+</div>
+
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager"]);
+initBranchSelector();
+window.onBranchChange = () => loadData();
+
+let products = [];
+let suppliers = [];
+let branches = [];
+let warehouses = [];
+let overrides = [];
+let editIndex = -1;
+let selectedIds = new Set();
+const labelProductSelect = document.getElementById("labelProduct");
+const labelQtyInput = document.getElementById("labelQty");
+const bulkLabelQtyInput = document.getElementById("bulkLabelQty");
+const bulkFilterMode = document.getElementById("bulkFilterMode");
+
+async function loadData(){
+    const [prodRes, supRes, branchRes, warehouseRes, overrideRes] = await Promise.all([
+        apiFetch(withBranch("/api/products")),
+        apiFetch("/api/suppliers"),
+        apiFetch("/api/branches"),
+        apiFetch(withBranch("/api/warehouses")),
+        apiFetch("/api/product-prices")
+    ]);
+    products = await prodRes.json();
+    suppliers = await supRes.json();
+    branches = await branchRes.json();
+    warehouses = await warehouseRes.json();
+    overrides = await overrideRes.json();
+    selectedIds = new Set(Array.from(selectedIds).filter(id => products.some(p => p.id === id)));
+    setSupplierOptions();
+    setWarehouseOptions();
+    setLabelOptions();
+    refreshOverrideSelectors();
+    renderProducts();
+    renderOverrides();
+}
+
+function withBranch(path){
+    const param = getActiveBranchParam();
+    return param ? `${path}?branch_id=${param}` : path;
+}
+
+function setSupplierOptions(){
+    const select = document.getElementById("supplier");
+    select.innerHTML = "";
+    const def = document.createElement("option");
+    def.value = "";
+    def.text = "Unassigned";
+    select.add(def);
+    suppliers.forEach(s=>{
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.text = s.name;
+        select.add(opt);
+    });
+}
+
+function setWarehouseOptions(){
+    const select = document.getElementById("warehouse");
+    if(!select) return;
+    select.innerHTML = "";
+    const def = document.createElement("option");
+    def.value = "";
+    def.text = "No Warehouse";
+    select.add(def);
+    warehouses.forEach(w=>{
+        const opt = document.createElement("option");
+        opt.value = w.id;
+        opt.text = w.name;
+        select.add(opt);
+    });
+}
+
+function setLabelOptions(){
+    if(!labelProductSelect) return;
+    labelProductSelect.innerHTML = "";
+    if(products.length === 0){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.text = "No products";
+        labelProductSelect.add(opt);
+        labelProductSelect.disabled = true;
+        return;
+    }
+    labelProductSelect.disabled = false;
+    products.forEach(p=>{
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.text = `${p.name} (${p.barcode || "No barcode"})`;
+        labelProductSelect.add(opt);
+    });
+}
+
+function refreshOverrideSelectors(){
+    const productSelect = document.getElementById("overrideProduct");
+    const branchSelect = document.getElementById("overrideBranch");
+    const prevProduct = productSelect.value;
+    const prevBranch = branchSelect.value;
+    productSelect.innerHTML = "";
+    branchSelect.innerHTML = "";
+    const allProd = document.createElement("option");
+    allProd.value = "";
+    allProd.text = "All Products (view)";
+    productSelect.add(allProd);
+    products.forEach(p=>{
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.text = p.name;
+        productSelect.add(opt);
+    });
+    const allBranch = document.createElement("option");
+    allBranch.value = "";
+    allBranch.text = "All Branches (view)";
+    branchSelect.add(allBranch);
+    branches.forEach(b=>{
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.text = b.name;
+        branchSelect.add(opt);
+    });
+    if(prevProduct && products.find(p => String(p.id) === String(prevProduct))){
+        productSelect.value = prevProduct;
+    }
+    if(prevBranch && branches.find(b => String(b.id) === String(prevBranch))){
+        branchSelect.value = prevBranch;
+    }
+}
+
+function generateBarcodeValue(){
+    return "BC" + Math.floor(100000 + Math.random()*900000);
+}
+
+function generateBarcode(){
+    document.getElementById("barcode").value = generateBarcodeValue();
+}
+
+async function saveProduct(){
+    const name=document.getElementById("name").value.trim();
+    const category=document.getElementById("category").value.trim();
+    const price=Number(document.getElementById("price").value);
+    const costPrice=Number(document.getElementById("costPrice").value);
+    const quantity=Number(document.getElementById("quantity").value);
+    const supplierId=document.getElementById("supplier").value;
+    const warehouseId=document.getElementById("warehouse").value;
+    const reorderInput=document.getElementById("reorderLevel").value;
+    const minStockInput=document.getElementById("minStock").value;
+    const maxStockInput=document.getElementById("maxStock").value;
+    const safetyStockInput=document.getElementById("safetyStock").value;
+    const leadInput=document.getElementById("leadTime").value;
+    const batchNo=document.getElementById("batchNo").value.trim();
+    const expiryDate=document.getElementById("expiryDate").value;
+    const barcodeInput=document.getElementById("barcode").value.trim();
+    const isPublished=document.getElementById("isPublished").checked ? 1 : 0;
+    const reorderLevel = reorderInput === "" ? null : Number(reorderInput);
+    const minStock = minStockInput === "" ? null : Number(minStockInput);
+    const maxStock = maxStockInput === "" ? null : Number(maxStockInput);
+    const safetyStock = safetyStockInput === "" ? null : Number(safetyStockInput);
+    const leadTime = leadInput === "" ? null : Number(leadInput);
+    const branchId = getActiveBranchId();
+
+    if(!name||!category||price<=0||quantity<0){alert("Please fill all fields correctly");return;}
+    if(!Number.isFinite(costPrice) || costPrice < 0){alert("Cost price must be 0 or more");return;}
+    if(reorderLevel !== null && (!Number.isFinite(reorderLevel) || reorderLevel < 0)){alert("Reorder level must be 0 or more");return;}
+    if(minStock !== null && (!Number.isFinite(minStock) || minStock < 0)){alert("Min stock must be 0 or more");return;}
+    if(maxStock !== null && (!Number.isFinite(maxStock) || maxStock < 0)){alert("Max stock must be 0 or more");return;}
+    if(safetyStock !== null && (!Number.isFinite(safetyStock) || safetyStock < 0)){alert("Safety stock must be 0 or more");return;}
+    if(leadTime !== null && (!Number.isFinite(leadTime) || leadTime < 0)){alert("Lead time must be 0 or more");return;}
+    if(!branchId){alert("Select a branch");return;}
+
+    const payload={
+        name,
+        category,
+        price,
+        cost_price: costPrice,
+        quantity,
+        supplier_id: supplierId ? Number(supplierId) : null,
+        warehouse_id: warehouseId ? Number(warehouseId) : null,
+        reorder_level: reorderLevel,
+        min_stock: minStock,
+        max_stock: maxStock,
+        safety_stock: safetyStock,
+        lead_time: leadTime,
+        barcode: barcodeInput || undefined,
+        branch_id: branchId,
+        batch_no: batchNo || null,
+        expiry_date: expiryDate || null,
+        is_published: isPublished
+    };
+
+    if(editIndex===-1){
+        const res = await apiFetch("/api/products", { method:"POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to add product");return;}
+    }else{
+        const product = products[editIndex];
+        const res = await apiFetch(`/api/products/${product.id}`, { method:"PUT", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to update product");return;}
+        editIndex=-1;
+        document.getElementById("saveBtn").innerText="Add Product";
+        document.getElementById("formTitle").innerText="Add New Product";
+    }
+    clearForm();
+    await loadData();
+}
+
+function getFilteredProducts(){
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    return products.filter(p=>{
+        const bag = `${p.name} ${p.category} ${p.branch_name||""} ${p.warehouse_name||""} ${p.supplier_name||""} ${p.barcode||""}`.toLowerCase();
+        return !q || bag.includes(q);
+    });
+}
+
+function updateSelectedCount(){
+    const count = selectedIds.size;
+    const label = document.getElementById("selectedCount");
+    if(label){
+        label.textContent = count ? `${count} selected` : "";
+    }
+}
+
+function toggleRowSelection(id, checked){
+    if(checked){
+        selectedIds.add(id);
+    }else{
+        selectedIds.delete(id);
+    }
+    const visible = getFilteredProducts();
+    const selectAll = document.getElementById("selectAll");
+    if(selectAll){
+        selectAll.checked = visible.length > 0 && visible.every(p => selectedIds.has(p.id));
+    }
+    updateSelectedCount();
+}
+
+function toggleSelectAll(box){
+    const visible = getFilteredProducts();
+    if(box.checked){
+        visible.forEach(p => selectedIds.add(p.id));
+    }else{
+        visible.forEach(p => selectedIds.delete(p.id));
+    }
+    renderProducts();
+}
+
+function selectAllVisible(){
+    const visible = getFilteredProducts();
+    visible.forEach(p => selectedIds.add(p.id));
+    renderProducts();
+}
+
+function clearSelection(){
+    selectedIds.clear();
+    renderProducts();
+}
+
+async function deleteSelected(){
+    const ids = Array.from(selectedIds);
+    if(ids.length === 0){
+        alert("Select at least one product.");
+        return;
+    }
+    if(!confirm(`Delete ${ids.length} selected product(s)?`)) return;
+    const res = await apiFetch("/api/products/bulk-delete", {
+        method: "POST",
+        body: JSON.stringify({ ids })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Bulk delete failed");
+        return;
+    }
+    selectedIds.clear();
+    await loadData();
+}
+
+function renderProducts(){
+    const table=document.getElementById("productTable");
+    const filtered = getFilteredProducts();
+    table.innerHTML=`<tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>Name</th><th>Category</th><th>Visible</th><th>Branch</th><th>Warehouse</th><th>Supplier</th><th>Price</th><th>Cost</th><th>Qty</th><th>Reorder</th><th>Min</th><th>Max</th><th>Safety</th><th>Lead</th><th>Batch</th><th>Expiry</th><th>Barcode</th><th>Actions</th></tr>`;
+    if(filtered.length===0){
+        table.innerHTML+=`<tr><td colspan="19" class="empty">No products available</td></tr>`;
+        updateSelectedCount();
+        return;
+    }
+    filtered.forEach((p)=>{
+        const i = products.indexOf(p);
+        const reorder = Number.isFinite(Number(p.reorder_level)) ? p.reorder_level : "Default (10)";
+        const minStock = Number.isFinite(Number(p.min_stock)) ? p.min_stock : "-";
+        const maxStock = Number.isFinite(Number(p.max_stock)) ? p.max_stock : "-";
+        const safetyStock = Number.isFinite(Number(p.safety_stock)) ? p.safety_stock : "-";
+        const lead = Number.isFinite(Number(p.lead_time)) ? `${p.lead_time}d` : "Default (7d)";
+        const displayPrice = Number.isFinite(Number(p.effective_price)) ? p.effective_price : p.price;
+        const displayCost = Number.isFinite(Number(p.effective_cost)) ? p.effective_cost : p.cost_price;
+        const publishedLabel = Number(p.is_published) === 0 ? "Hidden" : "Visible";
+        const checked = selectedIds.has(p.id) ? "checked" : "";
+        table.innerHTML+=`<tr>
+        <td><input type="checkbox" ${checked} onchange="toggleRowSelection(${p.id}, this.checked)"></td>
+        <td>${p.name}</td>
+        <td>${p.category}</td>
+        <td>${publishedLabel}</td>
+        <td>${p.branch_name || "—"}</td>
+        <td>${p.warehouse_name || "—"}</td>
+        <td>${p.supplier_name || "Unassigned"}</td>
+        <td>${formatKES(displayPrice)}</td>
+        <td>${formatKES(displayCost)}</td>
+        <td>${p.quantity}</td>
+        <td>${reorder}</td>
+        <td>${minStock}</td>
+        <td>${maxStock}</td>
+        <td>${safetyStock}</td>
+        <td>${lead}</td>
+        <td>${p.batch_no || "-"}</td>
+        <td>${p.expiry_date || "-"}</td>
+        <td>${p.barcode || "-"}</td>
+        <td><button class="edit-btn" onclick="editProduct(${i})">Edit</button>
+        <button class="delete-btn" onclick="deleteProduct(${i})">Delete</button></td>
+        </tr>`;
+    });
+    const selectAll = document.getElementById("selectAll");
+    if(selectAll){
+        const allSelected = filtered.every(p => selectedIds.has(p.id));
+        selectAll.checked = filtered.length > 0 && allSelected;
+    }
+    updateSelectedCount();
+}
+
+function renderOverrides(){
+    const table = document.getElementById("overrideTable");
+    table.innerHTML = `<tr><th>Product</th><th>Branch</th><th>Price</th><th>Cost</th><th>Updated</th><th>Actions</th></tr>`;
+    const productId = document.getElementById("overrideProduct").value;
+    const branchId = document.getElementById("overrideBranch").value;
+    const filtered = overrides.filter(o=>{
+        if(productId && String(o.product_id) !== String(productId)) return false;
+        if(branchId && String(o.branch_id) !== String(branchId)) return false;
+        return true;
+    });
+    if(filtered.length === 0){
+        table.innerHTML += `<tr><td colspan="6" class="empty">No overrides</td></tr>`;
+        return;
+    }
+    filtered.forEach(o=>{
+        const updated = o.updated_at ? new Date(o.updated_at).toLocaleString() : "-";
+        table.innerHTML += `
+            <tr>
+                <td>${o.product_name || "-"}</td>
+                <td>${o.branch_name || "-"}</td>
+                <td>${formatKES(o.price)}</td>
+                <td>${formatKES(o.cost_price)}</td>
+                <td>${updated}</td>
+                <td><button class="delete-btn" onclick="deleteOverride(${o.id})">Delete</button></td>
+            </tr>
+        `;
+    });
+}
+
+async function saveOverride(){
+    const productId = Number(document.getElementById("overrideProduct").value);
+    const branchId = Number(document.getElementById("overrideBranch").value);
+    const priceRaw = document.getElementById("overridePrice").value;
+    const costRaw = document.getElementById("overrideCost").value;
+    const price = Number(priceRaw);
+    const cost = costRaw === "" ? 0 : Number(costRaw);
+
+    if(!productId || !branchId){
+        alert("Select a product and branch to save an override.");
+        return;
+    }
+    if(!Number.isFinite(price) || price < 0){
+        alert("Override price must be 0 or more.");
+        return;
+    }
+    if(!Number.isFinite(cost) || cost < 0){
+        alert("Override cost must be 0 or more.");
+        return;
+    }
+
+    const res = await apiFetch("/api/product-prices", {
+        method: "POST",
+        body: JSON.stringify({
+            product_id: productId,
+            branch_id: branchId,
+            price,
+            cost_price: cost
+        })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Failed to save override");
+        return;
+    }
+    document.getElementById("overridePrice").value = "";
+    document.getElementById("overrideCost").value = "";
+    await loadData();
+}
+
+async function deleteOverride(id){
+    if(!confirm("Delete this override?")) return;
+    const res = await apiFetch(`/api/product-prices/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Delete failed");
+        return;
+    }
+    await loadData();
+}
+
+function downloadTemplate(){
+    const header = "name,category,price,cost_price,quantity,supplier,warehouse,barcode,reorder_level,min_stock,max_stock,safety_stock,lead_time,batch_no,expiry_date,is_published\n";
+    const blob = new Blob([header], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "products_template.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+async function importCsv(){
+    const file = document.getElementById("csvFile").files[0];
+    if(!file){
+        alert("Select a CSV file to import.");
+        return;
+    }
+    const branchId = getActiveBranchId();
+    if(!branchId){
+        alert("Select a specific branch for import.");
+        return;
+    }
+    const csv = await file.text();
+    const res = await apiFetch("/api/products/import", {
+        method: "POST",
+        body: JSON.stringify({ csv, branch_id: branchId })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Import failed");
+        return;
+    }
+    const errors = (data.errors || []).slice(0, 5);
+    let message = `Import complete. Created ${data.created || 0}, updated ${data.updated || 0}.`;
+    if(errors.length){
+        message += `\nErrors:\n${errors.join("\n")}`;
+    }
+    alert(message);
+    document.getElementById("csvFile").value = "";
+    await loadData();
+}
+
+function printLabels(){
+    const productId = Number(labelProductSelect.value);
+    const product = products.find(p => p.id === productId);
+    if(!product){ alert("Select a product"); return; }
+    if(!product.barcode){ alert("This product has no barcode. Generate one first."); return; }
+    const qty = Math.max(1, Number(labelQtyInput.value) || 1);
+    const price = Number.isFinite(Number(product.effective_price)) ? product.effective_price : product.price;
+    const priceLabel = "KES " + Number(price || 0).toLocaleString();
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    JsBarcode(svg, product.barcode, { format: "CODE128", width: 2, height: 60, displayValue: true });
+    const svgMarkup = svg.outerHTML;
+
+    let labels = "";
+    for(let i=0;i<qty;i++){
+        labels += `
+        <div class="label">
+            <div class="label-name">${product.name}</div>
+            <div class="label-price">${priceLabel}</div>
+            ${svgMarkup}
+        </div>`;
+    }
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(`
+      <html>
+      <head>
+        <title>Print Labels</title>
+        <style>
+          body{font-family:Arial,sans-serif;padding:20px;}
+          .label{display:inline-block;border:1px dashed #bbb;border-radius:8px;padding:8px;margin:6px;min-width:220px;text-align:center;}
+          .label-name{font-size:12px;font-weight:600;margin-bottom:4px;}
+          .label-price{font-size:11px;color:#333;margin-bottom:6px;}
+          svg{max-width:200px;}
+        </style>
+      </head>
+      <body>${labels}</body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+}
+
+function getReorderThreshold(p){
+    const minStock = Number(p.min_stock);
+    if(Number.isFinite(minStock)) return minStock;
+    const reorder = Number(p.reorder_level);
+    return Number.isFinite(reorder) ? reorder : 10;
+}
+
+function getFilteredProducts(){
+    const mode = bulkFilterMode ? bulkFilterMode.value : "all";
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    let list = products.slice();
+    if(mode === "filtered"){
+        list = list.filter(p=>{
+            const bag = `${p.name} ${p.category} ${p.branch_name||""} ${p.warehouse_name||""} ${p.supplier_name||""} ${p.barcode||""}`.toLowerCase();
+            return !q || bag.includes(q);
+        });
+    }
+    if(mode === "low"){
+        list = list.filter(p => Number(p.quantity) <= getReorderThreshold(p));
+    }
+    return list;
+}
+
+async function generateMissingBarcodes(){
+    const branchId = getActiveBranchId();
+    if(!branchId){
+        alert("Select a branch first.");
+        return;
+    }
+    const res = await apiFetch("/api/products/barcodes/generate", {
+        method: "POST",
+        body: JSON.stringify({ branch_id: branchId })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Barcode generation failed");
+        return;
+    }
+    alert(`Generated ${data.updated || 0} barcodes.`);
+    await loadData();
+}
+
+function buildLabelMarkup(product, priceLabel, svgMarkup, type){
+    if(type === "shelf"){
+        return `
+          <div class="label shelf">
+            <div class="label-name">${product.name}</div>
+            <div class="label-price">${priceLabel}</div>
+            <div class="label-meta">${product.category || "General"} • ${product.barcode || ""}</div>
+          </div>
+        `;
+    }
+    return `
+      <div class="label">
+        <div class="label-name">${product.name}</div>
+        <div class="label-price">${priceLabel}</div>
+        ${svgMarkup}
+      </div>
+    `;
+}
+
+function printBulkLabels(){
+    const qty = Math.max(1, Number(bulkLabelQtyInput.value) || 1);
+    const list = getFilteredProducts();
+    if(list.length === 0){
+        alert("No products to print.");
+        return;
+    }
+    let labels = "";
+    let skipped = 0;
+    list.forEach(product => {
+        if(!product.barcode){ skipped++; return; }
+        const price = Number.isFinite(Number(product.effective_price)) ? product.effective_price : product.price;
+        const priceLabel = "KES " + Number(price || 0).toLocaleString();
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        JsBarcode(svg, product.barcode, { format: "CODE128", width: 2, height: 60, displayValue: true });
+        const svgMarkup = svg.outerHTML;
+        for(let i=0;i<qty;i++){
+            labels += buildLabelMarkup(product, priceLabel, svgMarkup, "product");
+        }
+    });
+    if(!labels){
+        alert("No barcoded products available. Generate barcodes first.");
+        return;
+    }
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(`
+      <html>
+      <head>
+        <title>Bulk Labels</title>
+        <style>
+          body{font-family:Arial,sans-serif;padding:20px;}
+          .label{display:inline-block;border:1px dashed #bbb;border-radius:8px;padding:8px;margin:6px;min-width:220px;text-align:center;}
+          .label-name{font-size:12px;font-weight:600;margin-bottom:4px;}
+          .label-price{font-size:11px;color:#333;margin-bottom:6px;}
+          svg{max-width:200px;}
+        </style>
+      </head>
+      <body>${labels}</body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    if(skipped){
+        alert(`Skipped ${skipped} products without barcodes.`);
+    }
+}
+
+function printShelfLabels(){
+    const list = getFilteredProducts();
+    if(list.length === 0){
+        alert("No products to print.");
+        return;
+    }
+    let labels = "";
+    list.forEach(product => {
+        const price = Number.isFinite(Number(product.effective_price)) ? product.effective_price : product.price;
+        const priceLabel = "KES " + Number(price || 0).toLocaleString();
+        labels += buildLabelMarkup(product, priceLabel, "", "shelf");
+    });
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(`
+      <html>
+      <head>
+        <title>Shelf Labels</title>
+        <style>
+          body{font-family:Arial,sans-serif;padding:20px;}
+          .label.shelf{display:inline-block;border:2px solid #111;border-radius:6px;padding:12px;margin:8px;min-width:260px;}
+          .label-name{font-size:14px;font-weight:700;margin-bottom:8px;}
+          .label-price{font-size:18px;font-weight:700;margin-bottom:6px;}
+          .label-meta{font-size:11px;color:#444;}
+        </style>
+      </head>
+      <body>${labels}</body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+}
+
+function editProduct(i){
+    const p=products[i];
+    document.getElementById("name").value=p.name;
+    document.getElementById("category").value=p.category;
+    document.getElementById("price").value=p.price;
+    document.getElementById("costPrice").value=Number.isFinite(Number(p.cost_price)) ? p.cost_price : "";
+    document.getElementById("quantity").value=p.quantity;
+    document.getElementById("supplier").value=p.supplier_id || "";
+    document.getElementById("warehouse").value=p.warehouse_id || "";
+    document.getElementById("reorderLevel").value=Number.isFinite(Number(p.reorder_level)) ? p.reorder_level : "";
+    document.getElementById("minStock").value=Number.isFinite(Number(p.min_stock)) ? p.min_stock : "";
+    document.getElementById("maxStock").value=Number.isFinite(Number(p.max_stock)) ? p.max_stock : "";
+    document.getElementById("safetyStock").value=Number.isFinite(Number(p.safety_stock)) ? p.safety_stock : "";
+    document.getElementById("leadTime").value=Number.isFinite(Number(p.lead_time)) ? p.lead_time : "";
+    document.getElementById("batchNo").value=p.batch_no || "";
+    document.getElementById("expiryDate").value=p.expiry_date || "";
+    document.getElementById("barcode").value=p.barcode || "";
+    document.getElementById("isPublished").checked = Number(p.is_published) !== 0;
+    editIndex=i;
+    document.getElementById("saveBtn").innerText="Update Product";
+    document.getElementById("formTitle").innerText="Edit Product";
+}
+
+async function deleteProduct(i){
+    const product = products[i];
+    if(!confirm("Delete this product?")) return;
+    const res = await apiFetch(`/api/products/${product.id}`, { method:"DELETE" });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Delete failed");return;}
+    selectedIds.delete(product.id);
+    await loadData();
+}
+
+function clearForm(){
+    document.querySelectorAll("#productForm input").forEach(i=>i.value="");
+    document.getElementById("supplier").selectedIndex = 0;
+    document.getElementById("warehouse").selectedIndex = 0;
+    document.getElementById("isPublished").checked = true;
+}
+
+document.getElementById("overrideProduct").addEventListener("change", renderOverrides);
+document.getElementById("overrideBranch").addEventListener("change", renderOverrides);
+loadData();
+</script>
+</body>
+</html>

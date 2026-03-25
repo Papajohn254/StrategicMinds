@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Control — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" data-scanner-lib="html5-qrcode" onerror="this.onerror=null;this.src='vendor/html5-qrcode.min.js';"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px;}
+.card{background:white;padding:16px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.card h4{font-size:13px;color:#666;margin-bottom:6px;}
+.card p{font-size:22px;font-weight:600;color:#2c5364;}
+
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;}
+.section{background:white;padding:18px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:20px;}
+.section h3{margin-bottom:10px;}
+.section h4{margin:10px 0 8px;font-size:15px;color:#2c5364;}
+
+input,select,textarea{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;font-size:14px;}
+textarea{min-height:70px;resize:vertical;}
+button{padding:10px 14px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+button:hover{background:#203a43;}
+button.secondary{background:#ff9800;}
+button.danger{background:#d9534f;}
+.scan-row{display:grid;grid-template-columns:1.2fr 0.6fr 0.6fr;gap:10px;align-items:center;}
+.scan-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.scanner-modal{position:fixed;inset:0;background:rgba(15,23,42,0.6);display:none;align-items:center;justify-content:center;z-index:30;}
+.scanner-modal.open{display:flex;}
+.scanner-card{background:#fff;border-radius:12px;padding:16px;max-width:420px;width:92%;box-shadow:0 10px 25px rgba(0,0,0,0.2);display:grid;gap:12px;}
+.scanner-head{display:flex;justify-content:space-between;align-items:center;}
+.scanner-viewport{width:100%;min-height:220px;border-radius:10px;overflow:hidden;background:#203a43;color:#fff;display:flex;align-items:center;justify-content:center;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#777;padding:16px;}
+
+.badge{display:inline-block;padding:4px 8px;border-radius:12px;color:white;font-size:12px;}
+.badge.ok{background:#2c5364;}
+.badge.warn{background:#ff9800;}
+.badge.critical{background:#d9534f;}
+.badge.risk{background:#f0ad4e;}
+
+.alert-item{padding:10px;border-radius:8px;margin:8px 0;font-size:14px;}
+.alert-item.critical{background:#f8d7da;color:#842029;}
+.alert-item.warn{background:#fff3cd;color:#664d03;}
+.alert-item.info{background:#e7f1ff;color:#084298;}
+.alert-meta{font-size:12px;color:#555;margin-top:6px;}
+.alert-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+.alert-actions button{padding:6px 10px;font-size:12px;}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{background:#f1f1f1;padding:6px 10px;border-radius:16px;font-size:12px;color:#333;}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.note{color:#666;font-size:13px;line-height:1.5;}
+
+@media (max-width: 1000px){
+  .grid{grid-template-columns:1fr;}
+  .split{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Inventory Control Center</h3>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+
+<div class="content">
+
+<div class="cards">
+<div class="card"><h4>Total SKUs</h4><p id="kpiSkus">0</p></div>
+<div class="card"><h4>Total Units</h4><p id="kpiUnits">0</p></div>
+<div class="card"><h4>Low Stock Items</h4><p id="kpiLow">0</p></div>
+<div class="card"><h4>Predictive Alerts</h4><p id="kpiAlerts">0</p></div>
+<div class="card"><h4>Open Purchase Orders</h4><p id="kpiOrders">0</p></div>
+</div>
+
+<div class="grid">
+
+<div>
+<div class="section">
+<h3>Problem Focus and Goal</h3>
+<p class="note">The system tackles inefficient inventory management caused by manual records and disconnected spreadsheets. The goal is to keep purchasing, storage, and sales aligned in one connected workflow.</p>
+<h4>Key Issues Being Solved</h4>
+<div class="chips">
+<span class="chip">Slow tracking of stock movement</span>
+<span class="chip">Inaccurate stock records</span>
+<span class="chip">Stockouts or overstocking</span>
+<span class="chip">Poor inter-department communication</span>
+</div>
+</div>
+
+<div class="section">
+<h3>Stock Tracking Module</h3>
+<p class="note">Record items entering or leaving the store. This updates inventory and logs the movement for reporting.</p>
+<select id="movementProduct"></select>
+<select id="movementType">
+<option value="in">Stock In</option>
+<option value="out">Stock Out</option>
+</select>
+<input id="movementQty" type="number" min="1" placeholder="Quantity">
+<input id="movementRef" placeholder="Reference (supplier, customer, PO)">
+<textarea id="movementNote" placeholder="Notes (optional)"></textarea>
+<button onclick="recordMovement()">Record Movement</button>
+</div>
+
+<div class="section">
+<h3>Inventory Scan Mode</h3>
+<p class="note">Scan barcodes to receive stock, deduct stock, or set counted quantities instantly.</p>
+<div class="scan-row">
+<input id="scanBarcode" placeholder="Scan barcode or type code">
+<select id="scanMode">
+<option value="in">Receive Stock</option>
+<option value="out">Deduct Stock</option>
+<option value="count">Set Count</option>
+</select>
+<input id="scanQty" type="number" min="1" value="1" placeholder="Qty">
+</div>
+<div class="scan-actions">
+<button onclick="processScan()">Apply Scan</button>
+<button class="secondary" type="button" onclick="openInventoryScanner()">Camera Scan</button>
+</div>
+<div class="note" id="scanStatus">Ready to scan.</div>
+</div>
+
+<div class="section">
+<h3>Reorder and Predictive Settings</h3>
+<p class="note">Define minimum reorder levels and lead times so the system can flag risks early.</p>
+<select id="reorderProduct" onchange="syncReorderSettings()"></select>
+<input id="reorderLevel" type="number" min="0" placeholder="Reorder level (units)">
+<input id="minStock" type="number" min="0" placeholder="Min stock">
+<input id="maxStock" type="number" min="0" placeholder="Max stock">
+<input id="safetyStock" type="number" min="0" placeholder="Safety stock">
+<input id="leadTime" type="number" min="0" placeholder="Lead time (days)">
+<button onclick="saveReorderSettings()">Save Settings</button>
+</div>
+
+<div class="section">
+<h3>Ordering and Replenishment</h3>
+<p class="note">Create purchase orders and receive stock from suppliers.</p>
+<select id="poSupplier"></select>
+<select id="poProduct" onchange="syncSupplierFromProduct()"></select>
+<input id="poQty" type="number" min="1" placeholder="Order quantity">
+<input id="poEta" type="date">
+<button class="secondary" onclick="createPO()">Create Purchase Order</button>
+
+<h4>Open Orders</h4>
+<div class="table-wrap">
+<table id="poTable">
+<tr><th>PO</th><th>Supplier</th><th>Product</th><th>Qty</th><th>ETA</th><th>Requested By</th><th>Status</th><th>Action</th></tr>
+</table>
+</div>
+</div>
+
+<div class="section">
+<h3>Stakeholders and Access</h3>
+<h4>Users</h4>
+<div class="note">Store Manager — monitors stock, approves purchase orders, generates reports.</div>
+<div class="note">Store Staff — records stock movement, updates inventory, reports issues.</div>
+<div class="note">System Administrator — manages access, database upkeep, and system support.</div>
+<h4>Other Stakeholders</h4>
+<div class="note">Suppliers — deliver goods and maintain supply agreements.</div>
+<div class="note">Company Management — uses reports to make financial and operational decisions.</div>
+<div class="note">Customers — purchases drive inventory levels and demand trends.</div>
+</div>
+</div>
+
+<div>
+<div class="section">
+<h3>Inventory Database</h3>
+<div class="table-wrap">
+<table id="inventoryTable">
+<tr>
+<th>Product</th>
+<th>Category</th>
+<th>Supplier</th>
+<th>Warehouse</th>
+<th>Stock</th>
+<th>Reorder</th>
+<th>Lead Time</th>
+<th>Coverage</th>
+<th>Status</th>
+</tr>
+</table>
+</div>
+<p class="note" id="inventoryHint"></p>
+</div>
+
+<div class="section">
+<h3>Smart Predictive Alerts</h3>
+<p class="note">Predicts likely stockouts using recent sales history and lead times.</p>
+<div id="alertsList"></div>
+</div>
+
+<div class="section">
+<h3>Reporting and Analytics</h3>
+<div class="split">
+<div>
+<h4>Fast-Moving Items</h4>
+<div class="table-wrap">
+<table id="fastTable">
+<tr><th>Product</th><th>Sold</th></tr>
+</table>
+</div>
+</div>
+<div>
+<h4>Slow-Moving Items</h4>
+<div class="table-wrap">
+<table id="slowTable">
+<tr><th>Product</th><th>Sold</th></tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Recent Inventory Activity</h3>
+<div class="table-wrap">
+<table id="activityTable">
+<tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Reference</th><th>User</th></tr>
+</table>
+</div>
+</div>
+
+<div class="section">
+<h3>System Components</h3>
+<div class="chips">
+<span class="chip">User Interface Dashboard</span>
+<span class="chip">Inventory Database</span>
+<span class="chip">Stock Tracking Module</span>
+<span class="chip">Reporting and Analytics</span>
+<span class="chip">Security Access Control</span>
+<span class="chip">Integration with Sales</span>
+<span class="chip">Ordering and Replenishment</span>
+<span class="chip">Supplier Management</span>
+<span class="chip">Predictive Alerts</span>
+<span class="chip">Demand Forecasting</span>
+<span class="chip">Multi-Warehouse Support</span>
+<span class="chip">AI Support Assistant</span>
+</div>
+<h4>Innovation Highlight</h4>
+<p class="note">Smart Predictive Inventory Alert System analyzes sales patterns and stock movement to warn managers before shortages happen, shifting the system from reactive to predictive decision making.</p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="scanner-modal" id="inventoryScannerModal">
+<div class="scanner-card">
+<div class="scanner-head">
+<h4>Camera Scanner</h4>
+<button class="secondary" type="button" onclick="closeInventoryScanner()">Close</button>
+</div>
+<div class="scanner-viewport" id="inventoryScannerViewport">Camera loading…</div>
+<div class="note">Align the barcode within the frame.</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","staff","storekeeper"]);
+initBranchSelector();
+window.onBranchChange = () => loadData();
+
+const DEFAULT_REORDER = 10;
+const DEFAULT_LEAD = 7;
+
+let products = [];
+let suppliers = [];
+let purchaseOrders = [];
+let movements = [];
+let saleItems = [];
+let inventoryScanner = null;
+let inventoryScannerActive = false;
+let inventoryScannerStarting = false;
+
+function getSupportedBarcodeFormats(){
+    if(typeof Html5QrcodeSupportedFormats === "undefined") return null;
+    const f = Html5QrcodeSupportedFormats;
+    return [
+        f.CODE_128,
+        f.EAN_13,
+        f.EAN_8,
+        f.UPC_A,
+        f.UPC_E,
+        f.QR_CODE
+    ];
+}
+
+async function stopInventoryScannerInstance(){
+    if(inventoryScanner && inventoryScannerActive){
+        inventoryScannerActive = false;
+        try{ await inventoryScanner.stop(); }catch(e){}
+        try{ inventoryScanner.clear(); }catch(e){}
+    }
+}
+
+function ensureSecureContext(){
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if(!window.isSecureContext && !isLocal){
+        return false;
+    }
+    return true;
+}
+
+const scanBarcodeInput = document.getElementById("scanBarcode");
+const scanModeSelect = document.getElementById("scanMode");
+const scanQtyInput = document.getElementById("scanQty");
+const scanStatus = document.getElementById("scanStatus");
+
+async function loadData(){
+    try{
+        const [prodRes, supRes, poRes, movRes, itemsRes] = await Promise.all([
+            apiFetch(withBranch("/api/products")),
+            apiFetch("/api/suppliers"),
+            apiFetch(withBranch("/api/purchase-orders")),
+            apiFetch(withBranch("/api/movements")),
+            apiFetch(withBranch("/api/sale-items"))
+        ]);
+        products = await prodRes.json();
+        suppliers = await supRes.json();
+        purchaseOrders = await poRes.json();
+        movements = await movRes.json();
+        saleItems = await itemsRes.json();
+        renderAll();
+    }catch(err){
+        alert("Failed to load inventory data");
+    }
+}
+
+function withBranch(path){
+    const param = getActiveBranchParam();
+    return param ? `${path}?branch_id=${param}` : path;
+}
+
+function updateScanStatus(message){
+    if(scanStatus) scanStatus.textContent = message;
+}
+
+function handleScanCode(code){
+    if(!code) return;
+    const product = products.find(p => (p.barcode || "").toLowerCase() === code.toLowerCase());
+    if(!product){
+        updateScanStatus(`Barcode ${code} not found. Add it in Products.`);
+        if(confirm(`Barcode ${code} not found. Add new product?`)){
+            nav("products.html");
+        }
+        return;
+    }
+    scanBarcodeInput.value = code;
+    updateScanStatus(`Found ${product.name}. Ready to apply scan.`);
+    processScan(product);
+}
+
+async function processScan(foundProduct){
+    const branchId = getActiveBranchId();
+    if(!branchId){ alert("Select a branch"); return; }
+    const code = scanBarcodeInput.value.trim();
+    const product = foundProduct || products.find(p => (p.barcode || "").toLowerCase() === code.toLowerCase());
+    if(!product){ updateScanStatus("Product not found."); return; }
+    const qty = Number(scanQtyInput.value) || 0;
+    if(qty <= 0){ alert("Enter a valid quantity"); return; }
+    const mode = scanModeSelect.value;
+    if(mode === "count"){
+        const res = await apiFetch(`/api/products/${product.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ quantity: qty })
+        });
+        const data = await res.json();
+        if(!res.ok){ alert(data.error || "Count update failed"); return; }
+        updateScanStatus(`Count set: ${product.name} now ${qty} units.`);
+    }else{
+        const type = mode === "out" ? "OUT" : "IN";
+        const res = await apiFetch("/api/movements", {
+            method: "POST",
+            body: JSON.stringify({
+                product_id: product.id,
+                type,
+                qty,
+                reference: "Scan Mode",
+                note: "Barcode scan adjustment",
+                branch_id: branchId
+            })
+        });
+        const data = await res.json();
+        if(!res.ok){ alert(data.error || "Scan movement failed"); return; }
+        updateScanStatus(`${product.name} updated via scan (${type} ${qty}).`);
+    }
+    scanBarcodeInput.value = "";
+    scanQtyInput.value = 1;
+    await loadData();
+}
+
+function openInventoryScanner(){
+    const modal = document.getElementById("inventoryScannerModal");
+    modal.classList.add("open");
+    const viewport = document.getElementById("inventoryScannerViewport");
+    loadInventoryScannerLibrary().then((ok) => {
+        if(!ok || !window.Html5Qrcode){
+            alert("Camera scanner library not loaded. Check your internet connection.");
+            closeInventoryScanner();
+            return;
+        }
+        startInventoryScannerFlow();
+    });
+}
+
+function loadInventoryScannerLibrary(){
+    if(window.Html5Qrcode) return Promise.resolve(true);
+    return new Promise((resolve) => {
+        const existing = document.querySelector('script[data-scanner-lib="html5-qrcode"]');
+        if(existing){
+            existing.addEventListener("load", () => resolve(!!window.Html5Qrcode));
+            existing.addEventListener("error", () => resolve(false));
+            return;
+        }
+        const script = document.createElement("script");
+        script.src = "vendor/html5-qrcode.min.js";
+        script.async = true;
+        script.dataset.scannerLib = "html5-qrcode";
+        script.onload = () => resolve(!!window.Html5Qrcode);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+}
+
+function startInventoryScannerFlow(){
+    const viewport = document.getElementById("inventoryScannerViewport");
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        alert("Camera not supported in this browser.");
+        closeInventoryScanner();
+        return;
+    }
+    if(!ensureSecureContext()){
+        alert("Camera access needs HTTPS or http://localhost. Open the app using the local server.");
+        closeInventoryScanner();
+        return;
+    }
+    if(inventoryScannerStarting || inventoryScannerActive) return;
+    inventoryScannerStarting = true;
+    viewport.textContent = "Requesting camera access...";
+    Html5Qrcode.getCameras().then(async (cameras) => {
+        if(!cameras || cameras.length === 0){
+            throw new Error("No cameras found");
+        }
+        if(!inventoryScanner){
+            inventoryScanner = new Html5Qrcode("inventoryScannerViewport");
+        }
+        const preferred = cameras.find(cam => /back|rear|environment/i.test(cam.label));
+        const cameraId = (preferred || cameras[0]).id;
+        const config = { fps: 12, qrbox: { width: 260, height: 160 }, aspectRatio: 1.777 };
+        const formats = getSupportedBarcodeFormats();
+        if(formats) config.formatsToSupport = formats;
+        viewport.innerHTML = "";
+        await inventoryScanner.start(
+            cameraId,
+            config,
+            (decodedText) => {
+                handleScanCode(decodedText);
+                closeInventoryScanner();
+            },
+            () => {}
+        );
+        inventoryScannerActive = true;
+    }).catch((err) => {
+        const msg = err && err.message ? err.message : "Unable to access camera. Check permissions.";
+        alert(msg);
+        closeInventoryScanner();
+    }).finally(() => {
+        inventoryScannerStarting = false;
+    });
+}
+
+function closeInventoryScanner(){
+    const modal = document.getElementById("inventoryScannerModal");
+    modal.classList.remove("open");
+    stopInventoryScannerInstance();
+}
+
+function setSelectOptions(select, items, labelFn, valueFn){
+    select.innerHTML = "";
+    if(items.length === 0){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.text = "No items available";
+        select.add(opt);
+        select.disabled = true;
+        return;
+    }
+    select.disabled = false;
+    items.forEach((item)=>{
+        const opt = document.createElement("option");
+        opt.value = valueFn ? valueFn(item) : item.id;
+        opt.text = labelFn(item);
+        select.add(opt);
+    });
+}
+
+function refreshSelectors(){
+    setSelectOptions(document.getElementById("movementProduct"), products, p=>p.name, p=>p.id);
+    setSelectOptions(document.getElementById("reorderProduct"), products, p=>p.name, p=>p.id);
+    setSelectOptions(document.getElementById("poProduct"), products, p=>p.name, p=>p.id);
+    setSelectOptions(document.getElementById("poSupplier"), suppliers, s=>s.name, s=>s.id);
+    syncReorderSettings();
+    syncSupplierFromProduct();
+}
+
+function syncReorderSettings(){
+    const id = Number(document.getElementById("reorderProduct").value);
+    const product = products.find(p=>p.id === id);
+    if(!product){return;}
+    const reorderLevel = Number.isFinite(Number(product.reorder_level)) ? product.reorder_level : "";
+    const minStock = Number.isFinite(Number(product.min_stock)) ? product.min_stock : "";
+    const maxStock = Number.isFinite(Number(product.max_stock)) ? product.max_stock : "";
+    const safetyStock = Number.isFinite(Number(product.safety_stock)) ? product.safety_stock : "";
+    const leadTime = Number.isFinite(Number(product.lead_time)) ? product.lead_time : "";
+    document.getElementById("reorderLevel").value = reorderLevel;
+    document.getElementById("minStock").value = minStock;
+    document.getElementById("maxStock").value = maxStock;
+    document.getElementById("safetyStock").value = safetyStock;
+    document.getElementById("leadTime").value = leadTime;
+}
+
+function syncSupplierFromProduct(){
+    const id = Number(document.getElementById("poProduct").value);
+    const product = products.find(p=>p.id === id);
+    if(!product || !product.supplier_id){return;}
+    document.getElementById("poSupplier").value = product.supplier_id;
+}
+
+function getReorderLevel(p){
+    const minVal = Number(p.min_stock);
+    if(Number.isFinite(minVal)) return minVal;
+    const val = Number(p.reorder_level);
+    return Number.isFinite(val) ? val : DEFAULT_REORDER;
+}
+function getLeadTime(p){
+    const val = Number(p.lead_time);
+    if(Number.isFinite(val)) return val;
+    const supLead = Number(p.supplier_lead_time);
+    return Number.isFinite(supLead) ? supLead : DEFAULT_LEAD;
+}
+
+function buildSalesStats(){
+    const stats = {};
+    saleItems.forEach(item=>{
+        const name = item.product_name;
+        const qty = Number(item.qty) || 0;
+        if(!stats[name]) stats[name] = {qty:0, first:null, last:null, estimated:false};
+        stats[name].qty += qty;
+        const d = new Date(item.created_at);
+        if(!isNaN(d)){
+            if(!stats[name].first || d < stats[name].first) stats[name].first = d;
+            if(!stats[name].last || d > stats[name].last) stats[name].last = d;
+        }
+    });
+
+    Object.keys(stats).forEach(name=>{
+        const st = stats[name];
+        if(st.first && st.last){
+            const days = Math.max(1, Math.ceil((st.last - st.first) / 86400000) + 1);
+            st.avgDaily = st.qty / days;
+            st.days = days;
+        }else if(st.qty > 0){
+            st.avgDaily = st.qty / 30;
+            st.days = 30;
+            st.estimated = true;
+        }else{
+            st.avgDaily = 0;
+            st.days = 0;
+        }
+    });
+
+    return stats;
+}
+
+function getProductMeta(p, stats){
+    const qty = Number(p.quantity) || 0;
+    const reorderLevel = getReorderLevel(p);
+    const leadTime = getLeadTime(p);
+    const minStock = Number.isFinite(Number(p.min_stock)) ? Number(p.min_stock) : null;
+    const maxStock = Number.isFinite(Number(p.max_stock)) ? Number(p.max_stock) : null;
+    const safetyStock = Number.isFinite(Number(p.safety_stock)) ? Number(p.safety_stock) : 0;
+    const st = stats[p.name] || {avgDaily:0, days:0, estimated:false};
+    const avgDaily = st.avgDaily || 0;
+    const daysLeft = avgDaily > 0 ? qty / avgDaily : null;
+    const atRisk = avgDaily > 0 && daysLeft <= leadTime;
+    const lowStock = qty <= reorderLevel;
+    let status = "Healthy";
+    if(qty <= 0) status = "Out of Stock";
+    else if(lowStock) status = "Low Stock";
+    else if(atRisk) status = "At Risk";
+    let target = null;
+    if(Number.isFinite(maxStock)) target = maxStock;
+    else target = reorderLevel + (Number.isFinite(safetyStock) ? safetyStock : 0);
+    let reorderQty = Number.isFinite(target) ? Math.max(0, Math.ceil(target - qty)) : 0;
+    return {qty,reorderLevel,leadTime,avgDaily,daysLeft,atRisk,lowStock,status,estimated:st.estimated,minStock,maxStock,safetyStock,reorderQty};
+}
+
+async function recordMovement(){
+    const productId = Number(document.getElementById("movementProduct").value);
+    const type = document.getElementById("movementType").value;
+    const qty = Number(document.getElementById("movementQty").value);
+    const ref = document.getElementById("movementRef").value.trim();
+    const note = document.getElementById("movementNote").value.trim();
+
+    if(!productId){alert("Select a product");return;}
+    if(!Number.isFinite(qty) || qty <= 0){alert("Enter a valid quantity");return;}
+    const branchId = getActiveBranchId();
+    if(!branchId){alert("Select a branch");return;}
+
+    const res = await apiFetch("/api/movements",{
+        method:"POST",
+        body:JSON.stringify({
+            product_id: productId,
+            type: type === "in" ? "IN" : "OUT",
+            qty,
+            reference: ref,
+            note,
+            branch_id: branchId
+        })
+    });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Movement failed");return;}
+
+    document.getElementById("movementQty").value = "";
+    document.getElementById("movementRef").value = "";
+    document.getElementById("movementNote").value = "";
+    await loadData();
+}
+
+async function saveReorderSettings(){
+    const productId = Number(document.getElementById("reorderProduct").value);
+    const levelRaw = document.getElementById("reorderLevel").value;
+    const minRaw = document.getElementById("minStock").value;
+    const maxRaw = document.getElementById("maxStock").value;
+    const safetyRaw = document.getElementById("safetyStock").value;
+    const leadRaw = document.getElementById("leadTime").value;
+    const level = levelRaw === "" ? 0 : Number(levelRaw);
+    const minStock = minRaw === "" ? null : Number(minRaw);
+    const maxStock = maxRaw === "" ? null : Number(maxRaw);
+    const safetyStock = safetyRaw === "" ? null : Number(safetyRaw);
+    const lead = leadRaw === "" ? 0 : Number(leadRaw);
+
+    if(!productId){alert("Select a product");return;}
+    if(!Number.isFinite(level) || level < 0){alert("Enter a valid reorder level");return;}
+    if(minStock !== null && (!Number.isFinite(minStock) || minStock < 0)){alert("Enter a valid min stock");return;}
+    if(maxStock !== null && (!Number.isFinite(maxStock) || maxStock < 0)){alert("Enter a valid max stock");return;}
+    if(safetyStock !== null && (!Number.isFinite(safetyStock) || safetyStock < 0)){alert("Enter a valid safety stock");return;}
+    if(!Number.isFinite(lead) || lead < 0){alert("Enter a valid lead time");return;}
+
+    const res = await apiFetch(`/api/products/${productId}`,{
+        method:"PUT",
+        body:JSON.stringify({reorder_level: level, min_stock: minStock, max_stock: maxStock, safety_stock: safetyStock, lead_time: lead})
+    });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Update failed");return;}
+    await loadData();
+}
+
+async function createPO(){
+    const supplierId = Number(document.getElementById("poSupplier").value);
+    const productId = Number(document.getElementById("poProduct").value);
+    const qty = Number(document.getElementById("poQty").value);
+    const eta = document.getElementById("poEta").value;
+
+    if(!supplierId){alert("Select a supplier");return;}
+    if(!productId){alert("Select a product");return;}
+    if(!Number.isFinite(qty) || qty <= 0){alert("Enter a valid quantity");return;}
+    if(!eta){alert("Select an ETA date");return;}
+    const branchId = getActiveBranchId();
+    if(!branchId){alert("Select a branch");return;}
+
+    const res = await apiFetch("/api/purchase-orders",{
+        method:"POST",
+        body:JSON.stringify({
+            supplier_id: supplierId,
+            product_id: productId,
+            qty,
+            eta_date: eta,
+            branch_id: branchId
+        })
+    });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "PO creation failed");return;}
+
+    document.getElementById("poQty").value = "";
+    document.getElementById("poEta").value = "";
+    await loadData();
+}
+
+async function receivePO(index){
+    const po = purchaseOrders[index];
+    if(!po || po.status === "Received") return;
+    const res = await apiFetch(`/api/purchase-orders/${po.id}/receive`,{method:"POST"});
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Receive failed");return;}
+    await loadData();
+}
+
+function renderKPIs(stats){
+    const totalSkus = products.length;
+    const totalUnits = products.reduce((sum,p)=>sum + (Number(p.quantity)||0),0);
+    const lowStock = products.filter(p=>getProductMeta(p, stats).lowStock).length;
+    const alerts = products.filter(p=>{
+        const m = getProductMeta(p, stats);
+        return m.lowStock || m.atRisk || m.qty <= 0;
+    }).length;
+    const openOrders = purchaseOrders.filter(po=>po.status === "Pending").length;
+
+    document.getElementById("kpiSkus").innerText = totalSkus;
+    document.getElementById("kpiUnits").innerText = totalUnits;
+    document.getElementById("kpiLow").innerText = lowStock;
+    document.getElementById("kpiAlerts").innerText = alerts;
+    document.getElementById("kpiOrders").innerText = openOrders;
+}
+
+function renderInventoryTable(stats){
+    const table = document.getElementById("inventoryTable");
+    table.innerHTML = `<tr>
+    <th>Product</th>
+    <th>Category</th>
+    <th>Supplier</th>
+    <th>Warehouse</th>
+    <th>Stock</th>
+    <th>Reorder</th>
+    <th>Lead Time</th>
+    <th>Coverage</th>
+    <th>Status</th>
+    </tr>`;
+
+    const hint = document.getElementById("inventoryHint");
+
+    if(products.length === 0){
+        table.innerHTML += `<tr><td colspan="9" class="empty">No products available. Add products first.</td></tr>`;
+        hint.textContent = "";
+        return;
+    }
+
+    products.forEach(p=>{
+        const meta = getProductMeta(p, stats);
+        const reorderLabel = Number.isFinite(Number(p.reorder_level)) ? meta.reorderLevel : `${meta.reorderLevel} (default)`;
+        let leadLabel = `${meta.leadTime} days`;
+        if(!Number.isFinite(Number(p.lead_time))){
+            const supLead = Number(p.supplier_lead_time);
+            leadLabel = Number.isFinite(supLead) ? `${meta.leadTime} days (supplier)` : `${meta.leadTime} days (default)`;
+        }
+        const coverage = meta.avgDaily > 0 ? `${Math.ceil(meta.daysLeft)} day${Math.ceil(meta.daysLeft)===1?"":"s"}${meta.estimated?" est.":""}` : "n/a";
+        let badgeClass = "ok";
+        if(meta.status === "Out of Stock") badgeClass = "critical";
+        else if(meta.status === "Low Stock") badgeClass = "warn";
+        else if(meta.status === "At Risk") badgeClass = "risk";
+
+        table.innerHTML += `<tr>
+        <td>${p.name}</td>
+        <td>${p.category || "-"}</td>
+        <td>${p.supplier_name || "Unassigned"}</td>
+        <td>${p.warehouse_name || "-"}</td>
+        <td>${meta.qty}</td>
+        <td>${reorderLabel}</td>
+        <td>${leadLabel}</td>
+        <td>${coverage}</td>
+        <td><span class="badge ${badgeClass}">${meta.status}</span></td>
+        </tr>`;
+    });
+
+    hint.textContent = "Min stock overrides reorder level when set. Default reorder is 10 units. Supplier lead time is used when product lead time is not set (default 7 days).";
+}
+
+function renderAlerts(stats){
+    const list = document.getElementById("alertsList");
+    list.innerHTML = "";
+    const alerts = [];
+
+    products.forEach(p=>{
+        const meta = getProductMeta(p, stats);
+        const daysLeft = meta.daysLeft ? Math.max(1, Math.ceil(meta.daysLeft)) : null;
+        const runoutDate = daysLeft ? new Date(Date.now() + daysLeft * 86400000) : null;
+        if(meta.qty <= 0){
+            alerts.push({severity:"critical", product:p, meta, text:`${p.name} is out of stock.`, runoutDate});
+            return;
+        }
+        if(meta.lowStock){
+            alerts.push({severity:"warn", product:p, meta, text:`${p.name} is below reorder level (${meta.qty}/${meta.reorderLevel}).`, runoutDate});
+        }
+        if(meta.atRisk){
+            alerts.push({severity:"info", product:p, meta, text:`${p.name} may run out in about ${daysLeft} day${daysLeft===1?"":"s"} (lead time ${meta.leadTime} days).`, runoutDate});
+        }
+    });
+
+    if(alerts.length === 0){
+        list.innerHTML = `<div class="empty">No alerts. Inventory levels look healthy.</div>`;
+        return;
+    }
+
+    alerts.forEach(a=>{
+        const reorderQty = a.meta.reorderQty;
+        const runoutLabel = a.runoutDate ? a.runoutDate.toLocaleDateString() : "n/a";
+        const canCreate = ["admin","manager"].includes(currentUser.role) && a.product.supplier_id && reorderQty > 0;
+        list.innerHTML += `
+          <div class="alert-item ${a.severity}">
+            <div>${a.text}</div>
+            <div class="alert-meta">Runout estimate: ${runoutLabel} · Suggested reorder: ${reorderQty} units</div>
+            <div class="alert-actions">
+              ${canCreate ? `<button onclick="createAutoPO(${a.product.id}, ${reorderQty})">Create PO</button>` : ""}
+            </div>
+          </div>
+        `;
+    });
+}
+
+async function createAutoPO(productId, qty){
+    const product = products.find(p => p.id === productId);
+    if(!product){return;}
+    if(!product.supplier_id){alert("No supplier linked to this product.");return;}
+    const branchId = getActiveBranchId();
+    if(!branchId){alert("Select a branch");return;}
+    const lead = getLeadTime(product);
+    const eta = new Date(Date.now() + (lead * 86400000)).toISOString().slice(0,10);
+    const res = await apiFetch("/api/purchase-orders",{
+        method:"POST",
+        body:JSON.stringify({
+            supplier_id: product.supplier_id,
+            product_id: product.id,
+            qty: qty,
+            eta_date: eta,
+            branch_id: branchId
+        })
+    });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Auto PO failed");return;}
+    await loadData();
+}
+
+function renderReports(){
+    const fastTable = document.getElementById("fastTable");
+    const slowTable = document.getElementById("slowTable");
+    fastTable.innerHTML = `<tr><th>Product</th><th>Sold</th></tr>`;
+    slowTable.innerHTML = `<tr><th>Product</th><th>Sold</th></tr>`;
+
+    if(products.length === 0){
+        fastTable.innerHTML += `<tr><td colspan="2" class="empty">No products yet</td></tr>`;
+        slowTable.innerHTML += `<tr><td colspan="2" class="empty">No products yet</td></tr>`;
+        return;
+    }
+
+    const totals = {};
+    saleItems.forEach(item=>{
+        totals[item.product_name] = (totals[item.product_name] || 0) + (Number(item.qty) || 0);
+    });
+
+    const rows = products.map(p=>({name:p.name, qty: totals[p.name] || 0}));
+    const sorted = rows.slice().sort((a,b)=>b.qty - a.qty);
+    const fast = sorted.slice(0,5);
+    const slow = sorted.slice().reverse().slice(0,5);
+
+    fast.forEach(r=>{fastTable.innerHTML += `<tr><td>${r.name}</td><td>${r.qty}</td></tr>`;});
+    slow.forEach(r=>{slowTable.innerHTML += `<tr><td>${r.name}</td><td>${r.qty}</td></tr>`;});
+}
+
+function renderActivity(){
+    const table = document.getElementById("activityTable");
+    table.innerHTML = `<tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Reference</th><th>User</th></tr>`;
+
+    if(movements.length === 0){
+        table.innerHTML += `<tr><td colspan="6" class="empty">No activity yet</td></tr>`;
+        return;
+    }
+
+    movements.slice(0,8).forEach(h=>{
+        const ref = h.reference || "-";
+        table.innerHTML += `<tr>
+        <td>${h.created_at || "-"}</td>
+        <td>${h.product_name || "-"}</td>
+        <td>${h.type || "-"}</td>
+        <td>${h.qty || 0}</td>
+        <td>${ref}</td>
+        <td>${h.user_name || "-"}</td>
+        </tr>`;
+    });
+}
+
+function renderPOs(){
+    const table = document.getElementById("poTable");
+    table.innerHTML = `<tr><th>PO</th><th>Supplier</th><th>Product</th><th>Qty</th><th>ETA</th><th>Requested By</th><th>Status</th><th>Action</th></tr>`;
+    if(purchaseOrders.length === 0){
+        table.innerHTML += `<tr><td colspan="8" class="empty">No purchase orders</td></tr>`;
+        return;
+    }
+    purchaseOrders.forEach((po,i)=>{
+        const action = po.status === "Pending" ? `<button onclick="receivePO(${i})">Mark Received</button>` : "-";
+        table.innerHTML += `<tr>
+        <td>${po.po_number}</td>
+        <td>${po.supplier_name}</td>
+        <td>${po.product_name}</td>
+        <td>${po.qty}</td>
+        <td>${po.eta_date}</td>
+        <td>${po.requested_by_name || "-"}</td>
+        <td>${po.status}</td>
+        <td>${action}</td>
+        </tr>`;
+    });
+}
+
+function renderAll(){
+    const stats = buildSalesStats();
+    renderKPIs(stats);
+    renderInventoryTable(stats);
+    renderAlerts(stats);
+    renderReports();
+    renderActivity();
+    renderPOs();
+    refreshSelectors();
+}
+
+if(scanBarcodeInput){
+    scanBarcodeInput.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter"){
+            e.preventDefault();
+            const code = scanBarcodeInput.value.trim();
+            if(!code) return;
+            handleScanCode(code);
+        }
+    });
+}
+
+loadData();
+</script>
+
+</body>
+</html>

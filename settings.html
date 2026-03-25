@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;display:grid;gap:20px;}
+.section{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.section h3{margin-bottom:12px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+label{font-size:12px;color:#666;}
+input,select,textarea{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;}
+textarea{min-height:80px;}
+.button{padding:10px 14px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+.button.secondary{background:#ff9800;}
+.note{font-size:12px;color:#666;}
+.danger{background:#fff0f0;border:1px solid #f4b4b4;}
+.list-card{border:1px solid #e2e8f0;border-radius:10px;padding:14px;background:#fafbfc;}
+.pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#ecfeff;color:#155e75;}
+.pill.warn{background:#fff7ed;color:#9a3412;}
+.pill.muted{background:#f1f5f9;color:#475569;}
+.stack-grid{display:grid;gap:12px;}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>System Settings</h3>
+<span class="note">Configure receipts, taxes, payment modes, and integrations.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+
+<div class="content">
+<div class="section">
+<h3>Receipt Settings</h3>
+<div class="form-grid">
+<div>
+<label>Receipt ID Prefix</label>
+<input id="receiptPrefix" placeholder="RCPT">
+</div>
+<div>
+<label>Receipt Footer</label>
+<input id="receiptFooter" placeholder="Thank you for shopping!">
+</div>
+<div>
+<label>Site Footer Text</label>
+<input id="siteFooterText" placeholder="Copyright © 2026 SmartInventory Pro. All rights reserved.">
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Announcement Bar</h3>
+<div class="form-grid">
+<div>
+<label>Enable Scrolling Text</label>
+<select id="announcementEnabled">
+<option value="true">Enabled</option>
+<option value="false">Disabled</option>
+</select>
+</div>
+<div>
+<label>Announcement Text</label>
+<input id="announcementText" placeholder="Welcome to SmartInventory Pro">
+</div>
+<div>
+<label>Scroll Speed (seconds per loop)</label>
+<input id="announcementSpeed" type="number" min="8" max="60" step="1">
+</div>
+</div>
+<button class="button secondary" style="margin-top:12px;" onclick="resetAnnouncement()">Reset Announcement</button>
+</div>
+
+<div class="section">
+<h3>Tax & Discounts</h3>
+<div class="form-grid">
+<div>
+<label>Default Tax (%)</label>
+<input id="taxDefault" type="number" min="0" step="0.01">
+</div>
+<div>
+<label>Default Discount (KES)</label>
+<input id="discountDefault" type="number" min="0" step="0.01">
+</div>
+<div>
+<label>Round Off Decimal Point</label>
+<select id="roundOff">
+<option value="false">Disabled</option>
+<option value="true">Enabled</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Business Controls</h3>
+<div class="form-grid">
+<div>
+<label>Table Management</label>
+<select id="tableManagement">
+<option value="false">Off</option>
+<option value="true">On</option>
+</select>
+</div>
+<div>
+<label>Inventory Health Score</label>
+<select id="inventoryHealth">
+<option value="true">On</option>
+<option value="false">Off</option>
+</select>
+</div>
+<div>
+<label>Language</label>
+<select id="language">
+<option>English</option>
+<option>Swahili</option>
+<option>French</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Payment & Fees</h3>
+<div class="form-grid">
+<div>
+<label>Payment Modes (comma separated)</label>
+<input id="paymentModes" placeholder="Cash, Debit Card, Credit Card">
+</div>
+<div>
+<label>Delivery Fee</label>
+<input id="deliveryFee" type="number" min="0" step="0.01">
+</div>
+<div>
+<label>Packing Fee</label>
+<input id="packingFee" type="number" min="0" step="0.01">
+</div>
+<div>
+<label>Service Fee</label>
+<input id="serviceFee" type="number" min="0" step="0.01">
+</div>
+<div>
+<label>Other Fee</label>
+<input id="otherFee" type="number" min="0" step="0.01">
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>M-Pesa Accounts</h3>
+<p class="note">Use the branch selector at the top to manage branch-specific M-Pesa accounts. If you switch to all branches, you manage global fallback accounts.</p>
+<div class="form-grid">
+<div>
+<label>Account Name</label>
+<input id="mpesaAccountName" placeholder="Main Shop Till">
+</div>
+<div>
+<label>Business Type</label>
+<select id="mpesaBusinessType">
+<option value="paybill">Paybill</option>
+<option value="till">Till Number</option>
+</select>
+</div>
+<div>
+<label>Shortcode</label>
+<input id="mpesaShortcode" placeholder="123456">
+</div>
+<div>
+<label>Environment</label>
+<select id="mpesaEnvironment">
+<option value="sandbox">Sandbox</option>
+<option value="live">Live</option>
+</select>
+</div>
+<div>
+<label>Default Phone Number</label>
+<input id="mpesaPhoneNumber" placeholder="2547XXXXXXXX">
+</div>
+<div>
+<label>Currency</label>
+<input id="mpesaCurrency" placeholder="KES" value="KES">
+</div>
+<div>
+<label>Account Reference</label>
+<input id="mpesaAccountReference" placeholder="Order Payment">
+</div>
+<div>
+<label>Transaction Description</label>
+<input id="mpesaTransactionDescription" placeholder="Customer order payment">
+</div>
+<div>
+<label>Consumer Key</label>
+<input id="mpesaConsumerKey" placeholder="Paste consumer key">
+</div>
+<div>
+<label>Consumer Secret</label>
+<input id="mpesaConsumerSecret" placeholder="Paste consumer secret">
+</div>
+<div>
+<label>Passkey</label>
+<input id="mpesaPasskey" placeholder="Paste STK passkey">
+</div>
+<div>
+<label>Status</label>
+<select id="mpesaStatusSelect">
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+</div>
+<div>
+<label>Enable STK Push</label>
+<select id="mpesaEnableStkPush">
+<option value="true">Enabled</option>
+<option value="false">Disabled</option>
+</select>
+</div>
+<div>
+<label>Enable C2B</label>
+<select id="mpesaEnableC2B">
+<option value="false">Disabled</option>
+<option value="true">Enabled</option>
+</select>
+</div>
+<div>
+<label>Auto-confirm payments</label>
+<select id="mpesaAutoConfirm">
+<option value="false">Disabled</option>
+<option value="true">Enabled</option>
+</select>
+</div>
+<div>
+<label>Default Account</label>
+<select id="mpesaIsDefault">
+<option value="true">Yes</option>
+<option value="false">No</option>
+</select>
+</div>
+</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+<button class="button" type="button" onclick="saveMpesaAccount()">Save M-Pesa Account</button>
+<button class="button secondary" type="button" onclick="resetMpesaForm()">Clear Form</button>
+<div id="mpesaStatus" class="note"></div>
+</div>
+<div class="stack-grid" style="margin-top:16px;">
+<div>
+<h4 style="margin-bottom:8px;">Saved Accounts</h4>
+<div id="mpesaAccountsList" class="stack-grid"></div>
+</div>
+<div>
+<h4 style="margin-bottom:8px;">Recent M-Pesa Transactions</h4>
+<div id="mpesaTransactionsList" class="stack-grid"></div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Devices & Integrations</h3>
+<div class="form-grid">
+<div>
+<label>Weighing Machine</label>
+<select id="weighingMachine">
+<option value="false">Disconnected</option>
+<option value="true">Connected</option>
+</select>
+</div>
+<div>
+<label>Printer Enabled</label>
+<select id="printerEnabled">
+<option value="false">Off</option>
+<option value="true">On</option>
+</select>
+</div>
+<div>
+<label>Printer Name</label>
+<input id="printerName" placeholder="Epson TM-T20">
+</div>
+<div>
+<label>Kitchen Display App</label>
+<select id="kitchenDisplay">
+<option value="false">Disabled</option>
+<option value="true">Enabled</option>
+</select>
+</div>
+<div>
+<label>ShopFront</label>
+<select id="shopfrontEnabled">
+<option value="true">Enabled</option>
+<option value="false">Disabled</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h3>Legal Content</h3>
+<div class="form-grid">
+<div>
+<label>Privacy Policy</label>
+<textarea id="privacyPolicy" rows="15" placeholder="Enter your privacy policy content here..."></textarea>
+</div>
+<div>
+<label>Terms & Conditions</label>
+<textarea id="termsConditions" rows="15" placeholder="Enter your terms and conditions content here..."></textarea>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section danger">
+<h3>Danger Zone</h3>
+<p class="note">Reset transactional data or full business data. This is irreversible.</p>
+<div class="form-grid">
+<div>
+<label>Reset Mode</label>
+<select id="resetMode">
+<option value="transactions">Reset Transactions Only</option>
+<option value="full">Reset Business Data (Products, Customers, Sales)</option>
+</select>
+</div>
+</div>
+<button class="button secondary" onclick="resetData()">Reset Data</button>
+</div>
+</div>
+
+<div class="section">
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+<button class="button" type="button" onclick="saveSettings()">Save Settings</button>
+<div id="saveStatus" class="note"></div>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager"]);
+initBranchSelector();
+window.onBranchChange = async () => {
+    await loadSettings();
+    await loadMpesaAccounts();
+};
+let editingMpesaAccountId = null;
+
+async function loadSettings(){
+    const branchParam = getActiveBranchParam();
+    const res = await apiFetch(branchParam ? `/api/settings?branch_id=${branchParam}` : "/api/settings");
+    const data = await res.json();
+    applySettings(data || {});
+}
+
+function escapeHtml(value){
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function applySettings(s){
+    document.getElementById("receiptPrefix").value = s.receipt_prefix || "RCPT";
+    document.getElementById("receiptFooter").value = s.receipt_footer || "Thank you for shopping!";
+    document.getElementById("siteFooterText").value = s.site_footer_text || "Copyright © 2026 SmartInventory Pro. All rights reserved.";
+    document.getElementById("announcementEnabled").value = String(s.announcement_enabled !== false);
+    document.getElementById("announcementText").value = s.announcement_text || "Welcome to SmartInventory Pro — Modern POS & Inventory for every branch.";
+    document.getElementById("announcementSpeed").value = s.announcement_speed ?? 22;
+    document.getElementById("taxDefault").value = s.tax_rate_default ?? 0;
+    document.getElementById("discountDefault").value = s.discount_default ?? 0;
+    document.getElementById("roundOff").value = String(!!s.round_off_enabled);
+    document.getElementById("tableManagement").value = String(!!s.table_management_enabled);
+    document.getElementById("inventoryHealth").value = String(s.inventory_health_enabled !== false);
+    document.getElementById("language").value = s.language || "English";
+    const modes = Array.isArray(s.payment_modes) ? s.payment_modes.join(", ") : "Cash, Debit Card, Credit Card";
+    document.getElementById("paymentModes").value = modes;
+    document.getElementById("deliveryFee").value = s.delivery_fee ?? 0;
+    document.getElementById("packingFee").value = s.packing_fee ?? 0;
+    document.getElementById("serviceFee").value = s.service_fee ?? 0;
+    document.getElementById("otherFee").value = s.other_fee ?? 0;
+    document.getElementById("weighingMachine").value = String(!!s.weighing_machine_enabled);
+    document.getElementById("printerEnabled").value = String(!!s.printer_enabled);
+    document.getElementById("printerName").value = s.printer_name || "";
+    document.getElementById("kitchenDisplay").value = String(!!s.kitchen_display_enabled);
+    document.getElementById("shopfrontEnabled").value = String(s.shopfront_enabled !== false);
+    document.getElementById("privacyPolicy").value = s.privacy_policy || "";
+    document.getElementById("termsConditions").value = s.terms_conditions || "";
+}
+
+async function saveSettings(){
+    const settings = {
+        receipt_prefix: document.getElementById("receiptPrefix").value.trim() || "RCPT",
+        receipt_footer: document.getElementById("receiptFooter").value.trim(),
+        site_footer_text: document.getElementById("siteFooterText").value.trim() || "Copyright © 2026 SmartInventory Pro. All rights reserved.",
+        announcement_text: document.getElementById("announcementText").value.trim(),
+        announcement_enabled: document.getElementById("announcementEnabled").value === "true",
+        announcement_speed: Number(document.getElementById("announcementSpeed").value) || 22,
+        tax_rate_default: Number(document.getElementById("taxDefault").value) || 0,
+        discount_default: Number(document.getElementById("discountDefault").value) || 0,
+        round_off_enabled: document.getElementById("roundOff").value === "true",
+        table_management_enabled: document.getElementById("tableManagement").value === "true",
+        inventory_health_enabled: document.getElementById("inventoryHealth").value === "true",
+        language: document.getElementById("language").value,
+        payment_modes: document.getElementById("paymentModes").value.split(",").map(s=>s.trim()).filter(Boolean),
+        delivery_fee: Number(document.getElementById("deliveryFee").value) || 0,
+        packing_fee: Number(document.getElementById("packingFee").value) || 0,
+        service_fee: Number(document.getElementById("serviceFee").value) || 0,
+        other_fee: Number(document.getElementById("otherFee").value) || 0,
+        weighing_machine_enabled: document.getElementById("weighingMachine").value === "true",
+        printer_enabled: document.getElementById("printerEnabled").value === "true",
+        printer_name: document.getElementById("printerName").value.trim(),
+        kitchen_display_enabled: document.getElementById("kitchenDisplay").value === "true",
+        shopfront_enabled: document.getElementById("shopfrontEnabled").value === "true",
+        privacy_policy: document.getElementById("privacyPolicy").value.trim(),
+        terms_conditions: document.getElementById("termsConditions").value.trim()
+    };
+    const branchParam = getActiveBranchParam();
+    const branchId = branchParam === "all" ? 0 : (getActiveBranchId() || 0);
+    const res = await apiFetch("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ branch_id: branchId, settings })
+    });
+    const data = await res.json();
+    const status = document.getElementById("saveStatus");
+    if(!res.ok){
+        status.textContent = data.error || "Save failed";
+        return;
+    }
+    status.textContent = "Saved successfully.";
+    setTimeout(()=> status.textContent = "", 2500);
+    if(typeof window.refreshAnnouncement === "function"){
+        window.refreshAnnouncement();
+    }
+    if(typeof window.refreshSiteFooter === "function"){
+        window.refreshSiteFooter();
+    }
+}
+
+function resetAnnouncement(){
+    document.getElementById("announcementEnabled").value = "true";
+    document.getElementById("announcementText").value = "Welcome to SmartInventory Pro — Modern POS & Inventory for every branch.";
+    document.getElementById("announcementSpeed").value = 22;
+    saveSettings();
+}
+
+function resetMpesaForm(){
+    editingMpesaAccountId = null;
+    document.getElementById("mpesaAccountName").value = "";
+    document.getElementById("mpesaBusinessType").value = "paybill";
+    document.getElementById("mpesaShortcode").value = "";
+    document.getElementById("mpesaEnvironment").value = "sandbox";
+    document.getElementById("mpesaPhoneNumber").value = "";
+    document.getElementById("mpesaCurrency").value = "KES";
+    document.getElementById("mpesaAccountReference").value = "Order Payment";
+    document.getElementById("mpesaTransactionDescription").value = "Customer order payment";
+    document.getElementById("mpesaConsumerKey").value = "";
+    document.getElementById("mpesaConsumerSecret").value = "";
+    document.getElementById("mpesaPasskey").value = "";
+    document.getElementById("mpesaStatusSelect").value = "active";
+    document.getElementById("mpesaEnableStkPush").value = "true";
+    document.getElementById("mpesaEnableC2B").value = "false";
+    document.getElementById("mpesaAutoConfirm").value = "false";
+    document.getElementById("mpesaIsDefault").value = "true";
+    document.getElementById("mpesaStatus").textContent = "";
+}
+
+function fillMpesaForm(account){
+    editingMpesaAccountId = account.id;
+    document.getElementById("mpesaAccountName").value = account.account_name || "";
+    document.getElementById("mpesaBusinessType").value = account.business_type || "paybill";
+    document.getElementById("mpesaShortcode").value = account.shortcode || "";
+    document.getElementById("mpesaEnvironment").value = account.environment || "sandbox";
+    document.getElementById("mpesaPhoneNumber").value = account.phone_number || "";
+    document.getElementById("mpesaCurrency").value = account.currency || "KES";
+    document.getElementById("mpesaAccountReference").value = account.account_reference || "Order Payment";
+    document.getElementById("mpesaTransactionDescription").value = account.transaction_description || "Customer order payment";
+    document.getElementById("mpesaConsumerKey").value = "";
+    document.getElementById("mpesaConsumerSecret").value = "";
+    document.getElementById("mpesaPasskey").value = "";
+    document.getElementById("mpesaStatusSelect").value = account.status || "active";
+    document.getElementById("mpesaEnableStkPush").value = String(!!account.enable_stk_push);
+    document.getElementById("mpesaEnableC2B").value = String(!!account.enable_c2b);
+    document.getElementById("mpesaAutoConfirm").value = String(!!account.auto_confirm_payments);
+    document.getElementById("mpesaIsDefault").value = String(!!account.is_default);
+    document.getElementById("mpesaStatus").textContent = "Editing existing account. Leave secret fields blank to keep stored values.";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderMpesaAccounts(accounts){
+    const list = document.getElementById("mpesaAccountsList");
+    list.innerHTML = "";
+    if(!accounts.length){
+        list.innerHTML = `<div class="list-card"><div class="note">No M-Pesa accounts saved for this scope yet.</div></div>`;
+        return;
+    }
+    accounts.forEach(account => {
+        const card = document.createElement("div");
+        card.className = "list-card";
+        const statusPill = account.status === "active"
+            ? `<span class="pill">Active</span>`
+            : `<span class="pill muted">Inactive</span>`;
+        const defaultPill = account.is_default
+            ? `<span class="pill warn">Default</span>`
+            : "";
+        const readyPill = account.config_ready
+            ? `<span class="pill">API Ready</span>`
+            : `<span class="pill muted">Draft</span>`;
+        card.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                <div>
+                    <div style="font-weight:600;">${escapeHtml(account.account_name)} ${defaultPill}</div>
+                    <div class="note" style="margin-top:4px;">${escapeHtml((account.business_type || "").toUpperCase())} • ${escapeHtml(account.shortcode || "-")} • ${escapeHtml(account.environment || "sandbox")}</div>
+                    <div class="note" style="margin-top:6px;">Branch: ${escapeHtml(account.branch_name || "Global")} • Phone: ${escapeHtml(account.phone_number || "-")}</div>
+                    <div class="note" style="margin-top:6px;">Reference: ${escapeHtml(account.account_reference || "Order Payment")} • Description: ${escapeHtml(account.transaction_description || "Customer order payment")}</div>
+                    <div class="note" style="margin-top:6px;">Callback: ${escapeHtml(account.callback_url || "-")}</div>
+                    <div class="note" style="margin-top:4px;">Validation: ${escapeHtml(account.validation_url || "-")}</div>
+                    <div class="note" style="margin-top:4px;">Confirmation: ${escapeHtml(account.confirmation_url || "-")}</div>
+                    <div class="note" style="margin-top:6px;">Stored secrets: Key ${escapeHtml(account.consumer_key_masked || "Not set")} • Secret ${escapeHtml(account.consumer_secret_masked || "Not set")} • Passkey ${escapeHtml(account.passkey_masked || "Not set")}</div>
+                </div>
+                <div style="display:grid;gap:8px;justify-items:end;">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${statusPill}${readyPill}</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                        <button class="button" type="button" onclick="editMpesaAccount(${account.id})">Edit</button>
+                        <button class="button secondary" type="button" onclick="makeMpesaDefault(${account.id})">Make Default</button>
+                        <button class="button secondary" type="button" onclick="deleteMpesaAccount(${account.id})">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function renderMpesaTransactions(items){
+    const list = document.getElementById("mpesaTransactionsList");
+    list.innerHTML = "";
+    if(!items.length){
+        list.innerHTML = `<div class="list-card"><div class="note">No M-Pesa transaction logs yet.</div></div>`;
+        return;
+    }
+    items.slice(0, 12).forEach(item => {
+        const row = document.createElement("div");
+        row.className = "list-card";
+        row.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-weight:600;">${escapeHtml(item.account_name || "M-Pesa Account")} • ${escapeHtml(item.status || "pending")}</div>
+                    <div class="note" style="margin-top:4px;">Amount: KES ${Number(item.amount || 0).toLocaleString()} • Ref: ${escapeHtml(item.reference || "-")} • Receipt: ${escapeHtml(item.mpesa_receipt || "-")}</div>
+                    <div class="note" style="margin-top:4px;">Branch: ${escapeHtml(item.branch_name || "Global")} • Phone: ${escapeHtml(item.phone_number || "-")}</div>
+                </div>
+                <div class="note">${item.created_at ? new Date(item.created_at).toLocaleString() : "-"}</div>
+            </div>
+        `;
+        list.appendChild(row);
+    });
+}
+
+async function loadMpesaAccounts(){
+    const branchParam = getActiveBranchParam();
+    const query = branchParam ? `?branch_id=${encodeURIComponent(branchParam)}` : "";
+    const [accountsRes, txRes] = await Promise.all([
+        apiFetch(`/api/mpesa/accounts${query}`),
+        apiFetch(`/api/mpesa/transactions${query}`)
+    ]);
+    const accounts = accountsRes.ok ? await accountsRes.json() : [];
+    const transactions = txRes.ok ? await txRes.json() : [];
+    window.__mpesaAccounts = Array.isArray(accounts) ? accounts : [];
+    renderMpesaAccounts(window.__mpesaAccounts);
+    renderMpesaTransactions(Array.isArray(transactions) ? transactions : []);
+}
+
+function editMpesaAccount(accountId){
+    const account = (window.__mpesaAccounts || []).find(item => Number(item.id) === Number(accountId));
+    if(!account) return;
+    fillMpesaForm(account);
+}
+
+async function saveMpesaAccount(){
+    const payload = {
+        branch_id: getActiveBranchParam() === "all" ? 0 : (getActiveBranchId() || 0),
+        account_name: document.getElementById("mpesaAccountName").value.trim(),
+        business_type: document.getElementById("mpesaBusinessType").value,
+        shortcode: document.getElementById("mpesaShortcode").value.trim(),
+        environment: document.getElementById("mpesaEnvironment").value,
+        phone_number: document.getElementById("mpesaPhoneNumber").value.trim(),
+        currency: document.getElementById("mpesaCurrency").value.trim() || "KES",
+        account_reference: document.getElementById("mpesaAccountReference").value.trim() || "Order Payment",
+        transaction_description: document.getElementById("mpesaTransactionDescription").value.trim() || "Customer order payment",
+        consumer_key: document.getElementById("mpesaConsumerKey").value.trim(),
+        consumer_secret: document.getElementById("mpesaConsumerSecret").value.trim(),
+        passkey: document.getElementById("mpesaPasskey").value.trim(),
+        status: document.getElementById("mpesaStatusSelect").value,
+        enable_stk_push: document.getElementById("mpesaEnableStkPush").value === "true",
+        enable_c2b: document.getElementById("mpesaEnableC2B").value === "true",
+        auto_confirm_payments: document.getElementById("mpesaAutoConfirm").value === "true",
+        is_default: document.getElementById("mpesaIsDefault").value === "true"
+    };
+    if(!payload.account_name || !payload.shortcode){
+        document.getElementById("mpesaStatus").textContent = "Account name and shortcode are required.";
+        return;
+    }
+    const url = editingMpesaAccountId ? `/api/mpesa/accounts/${editingMpesaAccountId}` : "/api/mpesa/accounts";
+    const method = editingMpesaAccountId ? "PUT" : "POST";
+    const res = await apiFetch(url, {
+        method,
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const statusEl = document.getElementById("mpesaStatus");
+    if(!res.ok){
+        statusEl.textContent = data.error || "Unable to save M-Pesa account.";
+        return;
+    }
+    statusEl.textContent = editingMpesaAccountId ? "M-Pesa account updated." : "M-Pesa account saved.";
+    resetMpesaForm();
+    await loadMpesaAccounts();
+}
+
+async function makeMpesaDefault(accountId){
+    const res = await apiFetch(`/api/mpesa/accounts/${accountId}/default`, { method: "POST" });
+    const data = await res.json();
+    if(!res.ok){
+        document.getElementById("mpesaStatus").textContent = data.error || "Unable to set default account.";
+        return;
+    }
+    document.getElementById("mpesaStatus").textContent = "Default M-Pesa account updated.";
+    await loadMpesaAccounts();
+}
+
+async function deleteMpesaAccount(accountId){
+    if(!confirm("Delete this M-Pesa account?")) return;
+    const res = await apiFetch(`/api/mpesa/accounts/${accountId}`, { method: "DELETE" });
+    const data = await res.json();
+    if(!res.ok){
+        document.getElementById("mpesaStatus").textContent = data.error || "Unable to delete M-Pesa account.";
+        return;
+    }
+    if(Number(editingMpesaAccountId) === Number(accountId)){
+        resetMpesaForm();
+    }
+    document.getElementById("mpesaStatus").textContent = "M-Pesa account deleted.";
+    await loadMpesaAccounts();
+}
+
+async function resetData(){
+    const mode = document.getElementById("resetMode").value;
+    const confirmText = prompt("Type RESET to confirm");
+    if(confirmText !== "RESET"){
+        alert("Reset cancelled.");
+        return;
+    }
+    const res = await apiFetch("/api/settings/reset", {
+        method: "POST",
+        body: JSON.stringify({ mode, confirm: confirmText })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Reset failed");
+        return;
+    }
+    alert("Reset completed.");
+}
+
+loadSettings();
+loadMpesaAccounts();
+</script>
+</body>
+</html>

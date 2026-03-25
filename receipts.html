@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipts — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect, input[type=date]{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;}
+.table-box{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.table{width:100%;border-collapse:collapse;}
+.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;}
+.table th{background:#f1f1f1;}
+.actions{display:flex;gap:8px;flex-wrap:wrap;}
+.button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;font-size:12px;}
+.button.secondary{background:#ff9800;}
+.empty{padding:12px;color:#777;text-align:center;}
+.note{font-size:12px;color:#666;}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>Receipts</h3>
+<span class="note">Reprint receipts or initiate returns.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<label>From <input type="date" id="fromDate"></label>
+<label>To <input type="date" id="toDate"></label>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+
+<div class="content">
+<div class="table-box">
+<input id="searchInput" placeholder="Search receipt or customer" oninput="renderReceipts()">
+<table class="table" id="receiptTable">
+<tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th>Payment</th><th>Total</th><th>Branch</th><th>Actions</th></tr>
+</table>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","cashier"]);
+initBranchSelector();
+window.onBranchChange = () => loadReceipts();
+
+let receipts = [];
+
+function withinDate(dateStr, from, to){
+    if(!dateStr) return true;
+    const d = new Date(dateStr);
+    if(from && d < new Date(from + "T00:00:00")) return false;
+    if(to && d > new Date(to + "T23:59:59")) return false;
+    return true;
+}
+
+async function loadReceipts(){
+    const res = await apiFetch(withBranch("/api/sales"));
+    receipts = await res.json();
+    renderReceipts();
+}
+
+function withBranch(path){
+    const param = getActiveBranchParam();
+    return param ? `${path}?branch_id=${param}` : path;
+}
+
+function renderReceipts(){
+    const table = document.getElementById("receiptTable");
+    table.innerHTML = `<tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th>Payment</th><th>Total</th><th>Branch</th><th>Actions</th></tr>`;
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    const from = document.getElementById("fromDate").value;
+    const to = document.getElementById("toDate").value;
+    const filtered = receipts.filter(r => {
+        const bag = `${r.receipt_id} ${r.customer_name} ${r.cashier_name}`.toLowerCase();
+        return (!q || bag.includes(q)) && withinDate(r.created_at, from, to);
+    });
+    if(filtered.length === 0){
+        table.innerHTML += `<tr><td colspan="8" class="empty">No receipts</td></tr>`;
+        return;
+    }
+    filtered.forEach(r => {
+        table.innerHTML += `<tr>
+            <td>${r.receipt_id}</td>
+            <td>${new Date(r.created_at).toLocaleString()}</td>
+            <td>${r.customer_name || "-"}</td>
+            <td>${r.cashier_name || "-"}</td>
+            <td>${r.payment_mode || "-"}</td>
+            <td>${formatKES(r.total)}</td>
+            <td>${r.branch_name || "-"}</td>
+            <td class="actions">
+                <button class="button" onclick="printReceipt('${r.receipt_id}')">Print</button>
+                <button class="button secondary" onclick="startReturn('${r.receipt_id}')">Return</button>
+            </td>
+        </tr>`;
+    });
+}
+
+async function printReceipt(receiptId){
+    const res = await apiFetch(`/api/sales/receipt/${encodeURIComponent(receiptId)}`);
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Receipt not found");
+        return;
+    }
+    const sale = data.sale;
+    const items = data.items || [];
+    const fees = sale.fees_breakdown ? JSON.parse(sale.fees_breakdown) : { delivery:0, packing:0, service:0, other:0 };
+    const fmt = (n)=> Number(n || 0).toFixed(2);
+
+    let content = `
+        <div style="font-family:Poppins,sans-serif;width:320px;">
+            <h2 style="text-align:center;margin-bottom:8px;">SmartInventory Pro</h2>
+            <p style="font-size:12px;line-height:1.5;">
+                <strong>Customer:</strong> ${sale.customer_name || "Walk-in"}<br>
+                <strong>Cashier:</strong> ${sale.cashier_name || "Staff"}<br>
+                ${sale.table_name ? `<strong>Table:</strong> ${sale.table_name}<br>` : ""}
+                ${sale.payment_mode ? `<strong>Payment:</strong> ${sale.payment_mode}<br>` : ""}
+                <strong>Date:</strong> ${new Date(sale.created_at).toLocaleString()}<br>
+                <strong>Receipt ID:</strong> ${sale.receipt_id}
+            </p>
+            <table border="1" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">
+                <tr><th style="padding:6px;">Item</th><th style="padding:6px;">Qty</th><th style="padding:6px;">Price</th><th style="padding:6px;">Subtotal</th></tr>
+    `;
+
+    items.forEach(item => {
+        content += `
+            <tr>
+                <td style="padding:6px;">${item.product_name}</td>
+                <td style="padding:6px;">${item.qty}</td>
+                <td style="padding:6px;">KES ${fmt(item.price)}</td>
+                <td style="padding:6px;">KES ${fmt(item.subtotal)}</td>
+            </tr>
+        `;
+    });
+
+    content += `
+            </table>
+            <p style="font-size:12px;margin-top:10px;">
+                Subtotal: KES ${fmt(sale.subtotal)}<br>
+                Discount: KES ${fmt(sale.discount)}<br>
+                Tax: KES ${fmt(sale.tax)}<br>
+                Fees: KES ${fmt(sale.fees_total || 0)}<br>
+                <strong>Total: KES ${fmt(sale.total)}</strong>
+            </p>
+            <p style="text-align:center;font-size:12px;margin-top:8px;">Thank you for shopping!</p>
+        </div>
+    `;
+
+    const w = window.open("", "", "width=400,height=650");
+    if(!w) return;
+    w.document.write(content);
+    w.document.close();
+    w.print();
+    w.close();
+}
+
+function startReturn(receiptId){
+    localStorage.setItem("returnReceipt", receiptId);
+    window.location.href = "sales.html#returns";
+}
+
+[document.getElementById("fromDate"), document.getElementById("toDate")].forEach(el=>{
+    el.addEventListener("change", () => renderReceipts());
+});
+
+loadReceipts();
+</script>
+</body>
+</html>

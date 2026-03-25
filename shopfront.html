@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopFront — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;display:grid;gap:20px;}
+.section{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.note{font-size:12px;color:#666;}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+input,select{padding:10px;border-radius:6px;border:1px solid #ccc;}
+.button{padding:10px 14px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+.button.secondary{background:#ff9800;}
+.button.ghost{background:#e8eef1;color:#2c5364;}
+.button.small{padding:6px 10px;font-size:12px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.product-card{border:1px solid #e7edf1;border-radius:10px;padding:14px;display:grid;gap:10px;background:#fbfcfd;}
+.product-title{font-weight:600;color:#2c5364;}
+.meta{font-size:12px;color:#777;}
+.price{font-size:16px;font-weight:600;color:#1b3c4d;}
+.badge{display:inline-block;padding:2px 6px;border-radius:999px;background:#ffe7e7;color:#c62828;font-size:11px;}
+.cart-list{display:grid;gap:10px;margin-top:10px;}
+.cart-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;border-bottom:1px solid #f0f0f0;padding-bottom:8px;}
+.cart-row input{width:70px;}
+.totals{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-weight:600;}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.empty{text-align:center;color:#888;padding:20px;}
+.table-wrap{overflow:auto;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px;}
+th{background:#f1f1f1;}
+@media(max-width:900px){
+  .sidebar{display:none;}
+  body{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>ShopFront</h3>
+<span class="note">Online catalog and real-time order capture.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 User</div>
+</div>
+</div>
+
+<div class="content">
+<div class="section">
+<div class="section-head">
+<div>
+<h3>Live Product Catalog</h3>
+<span class="note">Products currently on sale with live pricing.</span>
+</div>
+<div class="tools">
+<input id="searchInput" placeholder="Search products or category">
+<button class="button" onclick="loadProducts()">Refresh</button>
+</div>
+</div>
+<div id="shopfrontStatus" class="note"></div>
+<div id="productGrid" class="grid"></div>
+<div id="emptyProducts" class="empty" style="display:none;">No products found.</div>
+</div>
+
+<div class="section">
+<h3>Order Cart</h3>
+<div id="cartList" class="cart-list"></div>
+<div class="form-grid" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+<div>
+<label class="note">Customer Name</label>
+<input id="customerName" placeholder="Optional">
+</div>
+<div>
+<label class="note">Contact</label>
+<input id="customerContact" placeholder="Phone or email">
+</div>
+<div>
+<label class="note">Delivery Type</label>
+<select id="deliveryType">
+<option value="branch">Branch Pickup</option>
+<option value="door">Door Delivery</option>
+</select>
+</div>
+<div>
+<label class="note">Payment Method</label>
+<select id="paymentMethod">
+<option value="Pay on Pickup">Pay on Pickup</option>
+<option value="Cash on Delivery">Cash on Delivery</option>
+<option value="M-PESA">M-PESA</option>
+<option value="Card">Card</option>
+</select>
+</div>
+<div id="deliveryAddressWrap" style="display:none;">
+<label class="note">Delivery Address</label>
+<input id="deliveryAddress" placeholder="Street, area, landmark">
+</div>
+<div id="deliveryPhoneWrap" style="display:none;">
+<label class="note">Delivery Phone</label>
+<input id="deliveryPhone" placeholder="Phone for delivery updates">
+</div>
+<div id="paymentReferenceWrap" style="display:none;">
+<label class="note">Payment Reference</label>
+<input id="paymentReference" placeholder="M-PESA or card reference">
+</div>
+<div id="mpesaAccountWrap" style="display:none;">
+<label class="note">M-Pesa Account</label>
+<select id="mpesaAccountSelect"></select>
+</div>
+</div>
+<div class="note" id="mpesaHelp" style="margin-top:8px;"></div>
+<div class="totals">
+<span>Total</span>
+<span id="cartTotal">KES 0</span>
+</div>
+<div class="note" id="deliveryFeeNote"></div>
+<div class="actions">
+<button class="button ghost" onclick="clearCart()">Clear Cart</button>
+<button class="button shopfront-action" onclick="submitOrder()">Create Online Order</button>
+</div>
+<div id="orderStatus" class="note"></div>
+</div>
+
+<div class="section" id="ordersSection" style="display:none;">
+<div class="section-head">
+<div>
+<h3>Recent Online Orders</h3>
+<span class="note">Manager view of submitted ShopFront orders.</span>
+</div>
+<button class="button secondary" onclick="loadOrders()">Reload Orders</button>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Order ID</th>
+<th>Customer</th>
+<th>Contact</th>
+<th>Items</th>
+<th>Total</th>
+<th>Delivery</th>
+<th>Payment</th>
+<th>Status</th>
+<th>Branch</th>
+<th>Date</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="ordersBody"></tbody>
+</table>
+</div>
+<div id="ordersEmpty" class="empty" style="display:none;">No online orders yet.</div>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","supervisor","staff","cashier","storekeeper"]);
+initBranchSelector();
+window.onBranchChange = () => {
+  clearCart(false);
+  loadSettings();
+  loadProducts();
+  loadOrders();
+};
+
+let products = [];
+let cart = [];
+let shopfrontEnabled = true;
+let deliveryFee = 0;
+let mpesaAccounts = [];
+
+const deliveryTypeSelect = document.getElementById("deliveryType");
+const deliveryAddressWrap = document.getElementById("deliveryAddressWrap");
+const deliveryPhoneWrap = document.getElementById("deliveryPhoneWrap");
+const deliveryAddressInput = document.getElementById("deliveryAddress");
+const deliveryPhoneInput = document.getElementById("deliveryPhone");
+const deliveryFeeNote = document.getElementById("deliveryFeeNote");
+const paymentMethodSelect = document.getElementById("paymentMethod");
+const paymentReferenceWrap = document.getElementById("paymentReferenceWrap");
+const paymentReferenceInput = document.getElementById("paymentReference");
+const mpesaAccountWrap = document.getElementById("mpesaAccountWrap");
+const mpesaAccountSelect = document.getElementById("mpesaAccountSelect");
+const mpesaHelp = document.getElementById("mpesaHelp");
+
+function requiresPaymentReference(method){
+  const value = String(method || "").toLowerCase();
+  if(!value) return false;
+  return !(value.includes("cash") || value.includes("pay on") || value.includes("delivery") || value.includes("pickup"));
+}
+
+function isMpesaMethod(method){
+  const value = String(method || "").toLowerCase();
+  return value.includes("mpesa") || value.includes("m-pesa");
+}
+
+function populateMpesaAccounts(){
+  if(!mpesaAccountSelect) return;
+  mpesaAccountSelect.innerHTML = "";
+  if(!mpesaAccounts.length){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No active M-Pesa account";
+    mpesaAccountSelect.appendChild(opt);
+    return;
+  }
+  mpesaAccounts.forEach(account => {
+    const opt = document.createElement("option");
+    opt.value = account.id;
+    opt.textContent = `${account.account_name} • ${account.business_type === "till" ? "Till" : "Paybill"} ${account.shortcode}${account.is_default ? " • Default" : ""}`;
+    mpesaAccountSelect.appendChild(opt);
+  });
+}
+
+function updateMpesaInfo(){
+  if(!mpesaHelp || !mpesaAccountWrap || !paymentMethodSelect) return;
+  const mpesaSelected = isMpesaMethod(paymentMethodSelect.value);
+  mpesaAccountWrap.style.display = mpesaSelected ? "block" : "none";
+  if(!mpesaSelected){
+    mpesaHelp.textContent = "";
+    return;
+  }
+  const selected = mpesaAccounts.find(item => String(item.id) === String(mpesaAccountSelect.value)) || mpesaAccounts[0];
+  if(!selected){
+    mpesaHelp.textContent = "No active M-Pesa account is configured for this branch.";
+    return;
+  }
+  const label = selected.business_type === "till" ? "Till" : "Paybill";
+  mpesaHelp.textContent = `${label}: ${selected.shortcode} • Reference: ${selected.account_reference || "Order Payment"} • ${selected.transaction_description || "Customer order payment"}`;
+}
+
+function updatePaymentVisibility(){
+  if(!paymentMethodSelect || !paymentReferenceWrap) return;
+  const needsRef = requiresPaymentReference(paymentMethodSelect.value);
+  paymentReferenceWrap.style.display = needsRef ? "block" : "none";
+  if(needsRef){
+    paymentReferenceInput.placeholder = "Payment reference (e.g. M-PESA code)";
+  }
+  updateMpesaInfo();
+}
+
+function formatItems(items){
+  if(!items || !items.length) return "-";
+  return items.map(i => `${i.qty} x ${i.name}`).join(", ");
+}
+
+async function loadSettings(){
+  try{
+    const branchParam = getActiveBranchParam();
+    const [res, mpesaRes] = await Promise.all([
+      apiFetch(branchParam ? `/api/settings?branch_id=${branchParam}` : "/api/settings"),
+      apiFetch(branchParam ? `/api/mpesa/accounts?branch_id=${branchParam}` : "/api/mpesa/accounts")
+    ]);
+    const settings = await res.json();
+    const mpesaData = mpesaRes.ok ? await mpesaRes.json() : [];
+    mpesaAccounts = Array.isArray(mpesaData) ? mpesaData.filter(item => item.status === "active") : [];
+    populateMpesaAccounts();
+    shopfrontEnabled = settings.shopfront_enabled !== false;
+    deliveryFee = Number(settings.delivery_fee || 0);
+    const status = document.getElementById("shopfrontStatus");
+    status.textContent = shopfrontEnabled ? "ShopFront is live for this branch." : "ShopFront is disabled in Settings.";
+    document.querySelectorAll(".shopfront-action").forEach(btn => btn.disabled = !shopfrontEnabled);
+    if(!shopfrontEnabled){
+      document.getElementById("orderStatus").textContent = "Enable ShopFront in Settings to submit orders.";
+    }
+    updateDeliveryVisibility();
+    renderCart();
+  }catch(e){
+    // ignore
+  }
+}
+
+async function loadProducts(){
+  const branchParam = getActiveBranchParam();
+  const res = await apiFetch(branchParam ? `/api/products?branch_id=${branchParam}` : "/api/products");
+  products = await res.json();
+  renderProducts();
+}
+
+function renderProducts(){
+  const grid = document.getElementById("productGrid");
+  const query = (document.getElementById("searchInput").value || "").toLowerCase();
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(query) || (p.category || "").toLowerCase().includes(query)
+  );
+  grid.innerHTML = "";
+  document.getElementById("emptyProducts").style.display = filtered.length ? "none" : "block";
+  filtered.forEach(p => {
+    const price = Number(p.effective_price ?? p.price ?? 0);
+    const card = document.createElement("div");
+    card.className = "product-card";
+    card.innerHTML = `
+      <div class="product-title">${p.name}</div>
+      <div class="meta">${p.category || "General"} • Stock: ${p.quantity ?? 0} ${Number(p.quantity) <= Number(p.reorder_level || 0) && Number(p.reorder_level) ? '<span class="badge">Low stock</span>' : ''}</div>
+      <div class="price">${formatKES(price)}</div>
+      <button class="button small shopfront-action" ${shopfrontEnabled ? "" : "disabled"} onclick="addToCart(${p.id})">Add to Cart</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function addToCart(productId){
+  if(!shopfrontEnabled) return;
+  const product = products.find(p => p.id === productId);
+  if(!product) return;
+  const existing = cart.find(item => item.product_id === productId);
+  if(existing){
+    existing.qty += 1;
+  }else{
+    cart.push({
+      product_id: productId,
+      name: product.name,
+      price: Number(product.effective_price ?? product.price ?? 0),
+      qty: 1
+    });
+  }
+  renderCart();
+}
+
+function updateQty(productId, value){
+  const item = cart.find(i => i.product_id === productId);
+  if(!item) return;
+  const qty = Math.max(1, Number(value) || 1);
+  item.qty = qty;
+  renderCart();
+}
+
+function removeItem(productId){
+  cart = cart.filter(i => i.product_id !== productId);
+  renderCart();
+}
+
+function clearCart(showStatus = true){
+  cart = [];
+  renderCart();
+  if(showStatus) document.getElementById("orderStatus").textContent = "Cart cleared.";
+}
+
+function renderCart(){
+  const list = document.getElementById("cartList");
+  list.innerHTML = "";
+  if(cart.length === 0){
+    list.innerHTML = '<div class="empty">No items in cart yet.</div>';
+  }else{
+    cart.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "cart-row";
+      row.innerHTML = `
+        <div>
+          <div class="product-title">${item.name}</div>
+          <div class="meta">${formatKES(item.price)}</div>
+        </div>
+        <input type="number" min="1" value="${item.qty}" onchange="updateQty(${item.product_id}, this.value)">
+        <div>${formatKES(item.price * item.qty)}</div>
+        <button class="button small secondary" onclick="removeItem(${item.product_id})">Remove</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+  const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const deliveryType = deliveryTypeSelect ? deliveryTypeSelect.value : "branch";
+  const fee = deliveryType === "door" ? deliveryFee : 0;
+  const total = subtotal + fee;
+  document.getElementById("cartTotal").textContent = formatKES(total);
+  if(deliveryFeeNote){
+    deliveryFeeNote.textContent = deliveryType === "door" && fee > 0 ? `Delivery fee: ${formatKES(fee)} (added to total).` : "";
+  }
+}
+
+function updateDeliveryVisibility(){
+  if(!deliveryTypeSelect) return;
+  const isDoor = deliveryTypeSelect.value === "door";
+  deliveryAddressWrap.style.display = isDoor ? "block" : "none";
+  deliveryPhoneWrap.style.display = isDoor ? "block" : "none";
+  if(paymentMethodSelect){
+    if(isDoor && paymentMethodSelect.value === "Pay on Pickup"){
+      paymentMethodSelect.value = "Cash on Delivery";
+    }
+    if(!isDoor && paymentMethodSelect.value === "Cash on Delivery"){
+      paymentMethodSelect.value = "Pay on Pickup";
+    }
+  }
+  updatePaymentVisibility();
+  renderCart();
+}
+
+async function submitOrder(){
+  if(!shopfrontEnabled){
+    alert("ShopFront is disabled in settings.");
+    return;
+  }
+  if(cart.length === 0){
+    alert("Add items to the cart first.");
+    return;
+  }
+  const branchId = getActiveBranchId();
+  if(!branchId){
+    alert("Select a branch to place the order.");
+    return;
+  }
+  const deliveryType = deliveryTypeSelect ? deliveryTypeSelect.value : "branch";
+  const deliveryAddress = deliveryAddressInput ? deliveryAddressInput.value.trim() : "";
+  const deliveryPhone = deliveryPhoneInput ? deliveryPhoneInput.value.trim() : "";
+  const contact = document.getElementById("customerContact").value.trim();
+  const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : "";
+  const paymentReference = paymentReferenceInput ? paymentReferenceInput.value.trim() : "";
+  if(deliveryType === "door" && !deliveryAddress){
+    alert("Delivery address is required for door delivery.");
+    return;
+  }
+  if(deliveryType === "door" && !(deliveryPhone || contact)){
+    alert("Provide a delivery phone or contact.");
+    return;
+  }
+  if(requiresPaymentReference(paymentMethod) && !paymentReference){
+    alert("Enter a payment reference for the selected payment method.");
+    return;
+  }
+  if(isMpesaMethod(paymentMethod) && !mpesaAccountSelect.value){
+    alert("Select an active M-Pesa account first.");
+    return;
+  }
+  const payload = {
+    customer_name: document.getElementById("customerName").value.trim(),
+    contact,
+    branch_id: branchId,
+    items: cart.map(i => ({ product_id: i.product_id, qty: i.qty })),
+    delivery_type: deliveryType,
+    delivery_address: deliveryAddress,
+    delivery_phone: deliveryPhone,
+    payment_method: paymentMethod,
+    payment_reference: paymentReference,
+    mpesa_account_id: isMpesaMethod(paymentMethod) ? Number(mpesaAccountSelect.value) : null
+  };
+  const res = await apiFetch("/api/shopfront/orders", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  const status = document.getElementById("orderStatus");
+  if(!res.ok){
+    status.textContent = data.error || "Order failed.";
+    return;
+  }
+  const contact = payload.contact || payload.delivery_phone || "";
+  const trackUrl = contact ? `track.html?order=${data.id}&contact=${encodeURIComponent(contact)}` : `track.html?order=${data.id}`;
+  const otpText = data.otp_code ? ` Delivery OTP: <strong>${data.otp_code}</strong>.` : "";
+  const paymentText = data.payment_status ? ` Payment: <strong>${data.payment_status}</strong>.` : "";
+  const mpesaText = data.mpesa_account ? ` M-Pesa ${data.mpesa_account.business_type === "till" ? "Till" : "Paybill"}: <strong>${data.mpesa_account.shortcode}</strong>.` : "";
+  status.innerHTML = `Order #${data.id} submitted successfully.${otpText}${paymentText}${mpesaText} Track it here: <a href="${trackUrl}" target="_blank" rel="noopener">${trackUrl}</a>`;
+  clearCart(false);
+  document.getElementById("customerName").value = "";
+  document.getElementById("customerContact").value = "";
+  if(deliveryAddressInput) deliveryAddressInput.value = "";
+  if(deliveryPhoneInput) deliveryPhoneInput.value = "";
+  if(paymentReferenceInput) paymentReferenceInput.value = "";
+  loadOrders();
+  loadProducts();
+}
+
+async function loadOrders(){
+  const allowed = ["admin","manager","supervisor"].includes(currentUser.role);
+  const section = document.getElementById("ordersSection");
+  if(!allowed){
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+  const branchParam = getActiveBranchParam();
+  const res = await apiFetch(branchParam ? `/api/shopfront/orders?branch_id=${branchParam}` : "/api/shopfront/orders");
+  const orders = await res.json();
+  const body = document.getElementById("ordersBody");
+  body.innerHTML = "";
+  document.getElementById("ordersEmpty").style.display = orders.length ? "none" : "block";
+  orders.forEach(o => {
+    const row = document.createElement("tr");
+    const statusOptions = ["Order Placed","Payment Confirmed","Processing","Packed","Ready for Delivery","Ready for Pickup","Delivered","Cancelled"];
+    const optionHtml = statusOptions.map(s => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("");
+    const paymentStatus = o.payment_status || (o.paid_at ? "Paid" : "Pending");
+    const paymentLabel = `${paymentStatus}${o.payment_method ? ` (${o.payment_method})` : ""}`;
+    const paymentAction = paymentStatus === "Paid" ? "" : `<button class="button small secondary" onclick="markOrderPaid(${o.id})">Mark Paid</button>`;
+    const actionHtml = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <select data-status="${o.id}">${optionHtml}</select>
+        <button class="button small" onclick="updateOrderStatus(${o.id})">Update</button>
+      </div>
+    `;
+    row.innerHTML = `
+      <td>#${o.id}</td>
+      <td>${o.customer_name || "-"}</td>
+      <td>${o.contact || "-"}</td>
+      <td>${formatItems(o.items)}</td>
+      <td>${formatKES(o.total)}</td>
+      <td>${o.delivery_type === "door" ? "Door" : "Branch"}</td>
+      <td>${paymentLabel}<div style="margin-top:6px;">${paymentAction}</div></td>
+      <td>${o.status || "-"}</td>
+      <td>${o.branch_name || "-"}</td>
+      <td>${new Date(o.created_at).toLocaleString()}</td>
+      <td>${actionHtml}</td>
+    `;
+    body.appendChild(row);
+  });
+}
+
+async function updateOrderStatus(orderId){
+  const select = document.querySelector(`select[data-status="${orderId}"]`);
+  if(!select) return;
+  const status = select.value;
+  const res = await apiFetch(`/api/shopfront/orders/${orderId}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Status update failed");
+    return;
+  }
+  loadOrders();
+}
+
+async function markOrderPaid(orderId){
+  const reference = prompt("Enter payment reference (optional)") || "";
+  const res = await apiFetch(`/api/shopfront/orders/${orderId}/payment`, {
+    method: "POST",
+    body: JSON.stringify({ payment_status: "Paid", payment_reference: reference })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "Payment update failed");
+    return;
+  }
+  loadOrders();
+}
+
+const searchInput = document.getElementById("searchInput");
+searchInput.addEventListener("input", renderProducts);
+if(deliveryTypeSelect){
+  deliveryTypeSelect.addEventListener("change", updateDeliveryVisibility);
+}
+if(paymentMethodSelect){
+  paymentMethodSelect.addEventListener("change", updatePaymentVisibility);
+}
+if(mpesaAccountSelect){
+  mpesaAccountSelect.addEventListener("change", updateMpesaInfo);
+}
+
+loadSettings();
+loadProducts();
+loadOrders();
+renderCart();
+updatePaymentVisibility();
+</script>
+</body>
+</html>

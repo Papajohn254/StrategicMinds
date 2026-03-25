@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customers — SmartInventory Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.content{padding:25px;}
+
+.form-box,.table-box{
+background:white;padding:20px;border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:25px;
+}
+
+input{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
+
+button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;background:#2c5364;color:white;}
+button:hover{background:#203a43;}
+
+.edit-btn{background:orange;}
+.delete-btn{background:red;}
+
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#777;padding:20px;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns" onclick="nav('returns.html')">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Customer Management</h3>
+<div id="userBadge">👤 Admin</div>
+</div>
+
+<div class="content">
+
+<div class="form-box">
+<h3 id="formTitle">Add New Customer</h3>
+<input id="name" placeholder="Customer Name">
+<input id="phone" placeholder="Phone">
+<input id="email" placeholder="Email">
+<input id="address" placeholder="Address">
+<button id="saveBtn" onclick="saveCustomer()">Add Customer</button>
+</div>
+
+<div class="table-box">
+<h3>Customer List</h3>
+<input id="searchInput" placeholder="Search customers" oninput="renderCustomers()">
+<table id="customerTable">
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Email</th>
+<th>Address</th>
+<th>Actions</th>
+</tr>
+</table>
+</div>
+
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","staff","cashier"]);
+let customers = [];
+let editIndex = -1;
+
+async function loadCustomers(){
+    const res = await apiFetch("/api/customers");
+    customers = await res.json();
+    renderCustomers();
+}
+
+async function saveCustomer(){
+    const name=document.getElementById("name").value.trim();
+    const phone=document.getElementById("phone").value.trim();
+    const email=document.getElementById("email").value.trim();
+    const address=document.getElementById("address").value.trim();
+
+    if(!name||!phone){ alert("Name and phone required"); return; }
+
+    const payload = { name, phone, email, address };
+
+    if(editIndex === -1){
+        const res = await apiFetch("/api/customers", { method:"POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to add customer"); return;}
+    }else{
+        const customer = customers[editIndex];
+        const res = await apiFetch(`/api/customers/${customer.id}`, { method:"PUT", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(!res.ok){alert(data.error || "Failed to update customer"); return;}
+        editIndex = -1;
+        document.getElementById("saveBtn").innerText="Add Customer";
+        document.getElementById("formTitle").innerText="Add New Customer";
+    }
+
+    clearForm();
+    await loadCustomers();
+}
+
+function renderCustomers(){
+    const table=document.getElementById("customerTable");
+    const q = document.getElementById("searchInput").value.toLowerCase();
+
+    table.innerHTML=`<tr>
+    <th>Name</th><th>Phone</th><th>Email</th>
+    <th>Address</th><th>Actions</th></tr>`;
+
+    const filtered = customers.filter(c=>{
+        const bag = `${c.name} ${c.phone} ${c.email||""} ${c.address||""}`.toLowerCase();
+        return !q || bag.includes(q);
+    });
+
+    if(filtered.length===0){
+        table.innerHTML+=`<tr><td colspan="5" class="empty">No customers found</td></tr>`;
+        return;
+    }
+
+    filtered.forEach((c)=>{
+        const i = customers.indexOf(c);
+        table.innerHTML+=`
+        <tr>
+        <td>${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${c.email||""}</td>
+        <td>${c.address||""}</td>
+        <td>
+        <button class="edit-btn" onclick="editCustomer(${i})">Edit</button>
+        <button class="delete-btn" onclick="deleteCustomer(${i})">Delete</button>
+        </td>
+        </tr>`;
+    });
+}
+
+function editCustomer(i){
+    const c=customers[i];
+    name.value=c.name;
+    phone.value=c.phone;
+    email.value=c.email || "";
+    address.value=c.address || "";
+
+    editIndex=i;
+    saveBtn.innerText="Update Customer";
+    formTitle.innerText="Edit Customer";
+}
+
+async function deleteCustomer(i){
+    if(!confirm("Delete this customer?")) return;
+    const customer = customers[i];
+    const res = await apiFetch(`/api/customers/${customer.id}`, { method:"DELETE" });
+    const data = await res.json();
+    if(!res.ok){alert(data.error || "Delete failed"); return;}
+    await loadCustomers();
+}
+
+function clearForm(){
+    document.querySelectorAll(".form-box input").forEach(i=>i.value="");
+}
+
+loadCustomers();
+</script>
+</body>
+</html>

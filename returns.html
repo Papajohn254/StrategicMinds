@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Returns — SmartInventory Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.sidebar{width:250px;background:#2c5364;color:white;padding:20px;}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar ul{list-style:none;}
+.sidebar ul li{padding:12px;margin:8px 0;border-radius:6px;cursor:pointer;}
+.sidebar ul li:hover{background:#203a43;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,0.1);flex-wrap:wrap;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;}
+.table-box{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.table{width:100%;border-collapse:collapse;}
+.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;}
+.table th{background:#f1f1f1;}
+.empty{padding:12px;color:#777;text-align:center;}
+.note{font-size:12px;color:#666;}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h2>📦 Inventory</h2>
+<ul>
+<li id="navDashboard" onclick="nav('dashboard.html')">Dashboard</li>
+<li id="navReports" onclick="nav('reports.html')">Reports</li>
+<li id="navProducts" onclick="nav('products.html')">Products</li>
+<li id="navSuppliers" onclick="nav('suppliers.html')">Suppliers</li>
+<li id="navInventory" onclick="nav('inventory.html')">Inventory</li>
+<li id="navCustomers" onclick="nav('customers.html')">Customers</li>
+<li id="navSales" onclick="nav('sales.html')">Sales / POS</li>
+<li id="navReceipts" onclick="nav('receipts.html')">Receipts</li>
+<li id="navReturns">Returns</li>
+<li id="navShopfront" onclick="nav('shopfront.html')">ShopFront</li>
+<li id="navKitchen" onclick="nav('kitchen.html')">Kitchen Display</li>
+<li id="navFeedback" onclick="nav('feedback.html')">Feedback</li>
+<li id="navReferrals" onclick="nav('referrals.html')">Refer App</li>
+<li id="navRequests" onclick="nav('requests.html')">Requests</li>
+<li id="navBranches" onclick="nav('branches.html')">Branches</li>
+<li id="navAttendance" onclick="nav('attendance.html')">Attendance</li>
+<li id="navSettings" onclick="nav('settings.html')">Settings</li>
+<li id="navUsers" onclick="nav('users.html')">Users & Roles</li>
+<li onclick="logout()">Logout 🚪</li>
+</ul>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<h3>Returns & Refunds</h3>
+<span class="note">Review returned receipts and refunded totals.</span>
+</div>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+
+<div class="content">
+<div class="table-box">
+<table class="table" id="returnTable">
+<tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th>Refund</th><th>Items</th><th>Branch</th></tr>
+</table>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const currentUser = applyUserContext(["admin","manager","cashier","supervisor"]);
+initBranchSelector();
+window.onBranchChange = () => loadReturns();
+
+async function loadReturns(){
+    const res = await apiFetch(withBranch("/api/returns"));
+    const data = await res.json();
+    renderReturns(data || []);
+}
+
+function withBranch(path){
+    const param = getActiveBranchParam();
+    return param ? `${path}?branch_id=${param}` : path;
+}
+
+function renderReturns(rows){
+    const table = document.getElementById("returnTable");
+    table.innerHTML = `<tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th>Refund</th><th>Items</th><th>Branch</th></tr>`;
+    if(rows.length === 0){
+        table.innerHTML += `<tr><td colspan="7" class="empty">No returns</td></tr>`;
+        return;
+    }
+    rows.forEach(r => {
+        const items = (r.items || []).map(it => `${it.product_name} (${it.qty})`).join(", ");
+        table.innerHTML += `<tr>
+            <td>${r.receipt_id || "-"}</td>
+            <td>${new Date(r.created_at).toLocaleString()}</td>
+            <td>${r.customer_name || "-"}</td>
+            <td>${r.cashier_name || "-"}</td>
+            <td>${formatKES(r.total_refund)}</td>
+            <td>${items || "-"}</td>
+            <td>${r.branch_name || "-"}</td>
+        </tr>`;
+    });
+}
+
+loadReturns();
+</script>
+</body>
+</html>
