@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — SmartInventory Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Hamburger Menu Component Styles and HTML -->
+<style>
+/* Hamburger Menu Styles */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Hamburger Button */
+.hamburger-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 45px;
+  height: 45px;
+  background: #2c5364;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.hamburger-btn:hover {
+  background: #1a3a4a;
+}
+
+.hamburger-btn span {
+  width: 25px;
+  height: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-btn span div {
+  width: 100%;
+  height: 2.5px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn.active span div:nth-child(1) {
+  transform: rotate(45deg) translate(8px, 8px);
+}
+
+.hamburger-btn.active span div:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span div:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* Overlay */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.menu-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Sidebar Menu */
+.sidebar-menu {
+  position: fixed;
+  left: -320px;
+  top: 0;
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(135deg, #1b263b 0%, #2c5364 100%);
+  box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+  transition: left 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 1001;
+  overflow-y: auto;
+  padding-top: 0;
+}
+
+.sidebar-menu.active {
+  left: 0;
+}
+
+/* Menu Header */
+.menu-header {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 25px 20px;
+  border-bottom: 2px solid rgba(0, 182, 255, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.menu-header h2 {
+  color: #00b4d8;
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-header p {
+  color: #b0c4de;
+  font-size: 12px;
+  margin: 0;
+}
+
+.user-info {
+  color: #ccc;
+  font-size: 13px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-role {
+  display: inline-block;
+  background: #00b4d8;
+  color: #1b263b;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* Menu Sections */
+.menu-section {
+  padding: 15px 0;
+}
+
+.menu-section:not(:first-of-type) {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-section-title {
+  color: #00b4d8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* Menu Items */
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e0e0e0;
+  padding: 14px 20px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  position: relative;
+}
+
+.menu-item:hover {
+  background: rgba(0, 182, 255, 0.15);
+  border-left-color: #00b4d8;
+  padding-left: 25px;
+  color: #00b4d8;
+}
+
+.menu-item.active {
+  background: rgba(0, 182, 255, 0.2);
+  border-left-color: #00b4d8;
+  color: #00b4d8;
+  font-weight: 600;
+}
+
+.menu-icon {
+  font-size: 18px;
+  margin-right: 12px;
+  min-width: 24px;
+}
+
+.menu-label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.menu-badge {
+  background: #ff6b6b;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { background: #ff6b6b; }
+  50% { background: #ff8787; }
+}
+
+.hidden-badge {
+  background: #666;
+  color: #999;
+}
+
+/* Admin Only Section */
+.admin-section {
+  display: none;
+}
+
+.admin-section.visible {
+  display: block;
+}
+
+/* Bottom Section */
+.menu-bottom {
+  padding: 15px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 12px;
+  background: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #c9302c;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .sidebar-menu {
+    width: 280px;
+    left: -280px;
+  }
+
+  body.menu-open {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  .hamburger-btn {
+    width: 40px;
+    height: 40px;
+    top: 12px;
+    left: 12px;
+  }
+
+  .hamburger-btn span {
+    width: 22px;
+    height: 18px;
+  }
+
+  .menu-header h2 {
+    font-size: 18px;
+  }
+
+  .menu-item {
+    padding: 12px 15px;
+    font-size: 13px;
+  }
+
+  .menu-icon {
+    font-size: 16px;
+    margin-right: 10px;
+  }
+}
+
+/* Scrollbar Styling */
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 182, 255, 0.5);
+  border-radius: 3px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 182, 255, 0.8);
+}
+</style>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{display:flex;min-height:100vh;background:#f4f6f9;}
+.main{flex:1;display:flex;flex-direction:column;}
+.topbar{background:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+#branchSelect{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+.content{padding:25px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:30px;}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.card h3{color:#666;font-size:15px;margin-bottom:6px;}
+.card p{font-size:28px;font-weight:600;color:#2c5364;}
+.alert{color:#d9534f;}
+.section{background:white;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:30px;}
+.attendance-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.attendance-status{color:#555;font-size:14px;}
+.attendance-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.note{color:#666;font-size:12px;}
+textarea{width:100%;height:60px;padding:10px;border-radius:6px;border:1px solid #ccc;}
+button{margin-top:10px;padding:10px 15px;background:#2c5364;color:white;border:none;border-radius:6px;cursor:pointer;}
+#aiOutput{margin-top:12px;background:#f1f1f1;padding:12px;border-radius:6px;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{padding:12px;border-bottom:1px solid #eee;text-align:left;}
+th{background:#f1f1f1;}
+.empty{text-align:center;color:#888;padding:20px;}
+</style>
+</head>
+
+<body>
+
+<!-- Hamburger Menu HTML -->
+<button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMenu()">
+  <span>
+    <div></div>
+    <div></div>
+    <div></div>
+  </span>
+</button>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+
+<div class="sidebar-menu" id="sidebarMenu">
+  <div class="menu-header">
+    <h2>SmartInventory Pro</h2>
+    <p>Inventory Management System</p>
+    <div class="user-info" id="userInfo">
+      <div>👤 <span id="userName">User</span></div>
+      <span class="user-role" id="userRole">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">📊 Dashboard</h3>
+    <a class="menu-item active" href="dashboard.html" data-page="dashboard">
+      <span class="menu-icon">🏠</span>
+      <span class="menu-label">Dashboard</span>
+    </a>
+  </div>
+
+  <!-- Inventory Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">📦 Inventory</h3>
+    <a class="menu-item" href="products.html" data-page="products">
+      <span class="menu-icon">📦</span>
+      <span class="menu-label">Products</span>
+      <span class="menu-badge" id="lowStockBadge" style="display:none;"></span>
+    </a>
+    <a class="menu-item" href="inventory.html" data-page="inventory">
+      <span class="menu-icon">📊</span>
+      <span class="menu-label">Inventory</span>
+    </a>
+    <a class="menu-item" href="suppliers.html" data-page="suppliers">
+      <span class="menu-icon">🚚</span>
+      <span class="menu-label">Suppliers</span>
+    </a>
+  </div>
+
+  <!-- Sales & Orders Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">💰 Sales</h3>
+    <a class="menu-item" href="sales.html" data-page="sales">
+      <span class="menu-icon">💳</span>
+      <span class="menu-label">POS / Sales</span>
+      <span class="menu-badge" id="pendingOrdersBadge" style="display:none;"></span>
+    </a>
+    <a class="menu-item" href="receipts.html" data-page="receipts">
+      <span class="menu-icon">🧾</span>
+      <span class="menu-label">Receipts</span>
+    </a>
+    <a class="menu-item" href="returns.html" data-page="returns">
+      <span class="menu-icon">↩️</span>
+      <span class="menu-label">Returns</span>
+    </a>
+  </div>
+
+  <!-- Customer & Business Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">👥 Business</h3>
+    <a class="menu-item" href="customers.html" data-page="customers">
+      <span class="menu-icon">👥</span>
+      <span class="menu-label">Customers</span>
+    </a>
+    <a class="menu-item" href="feedback.html" data-page="feedback">
+      <span class="menu-icon">⭐</span>
+      <span class="menu-label">Feedback</span>
+      <span class="menu-badge" id="feedbackBadge" style="display:none;"></span>
+    </a>
+    <a class="menu-item" href="referrals.html" data-page="referrals">
+      <span class="menu-icon">🎁</span>
+      <span class="menu-label">Referrals</span>
+    </a>
+    <a class="menu-item" href="shopfront.html" data-page="shopfront">
+      <span class="menu-icon">🛍️</span>
+      <span class="menu-label">ShopFront</span>
+    </a>
+  </div>
+
+  <!-- Operations Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">⚙️ Operations</h3>
+    <a class="menu-item" href="kitchen.html" data-page="kitchen">
+      <span class="menu-icon">🍳</span>
+      <span class="menu-label">Kitchen Display</span>
+    </a>
+    <a class="menu-item" href="requests.html" data-page="requests">
+      <span class="menu-icon">📋</span>
+      <span class="menu-label">Requests</span>
+      <span class="menu-badge" id="requestsBadge" style="display:none;"></span>
+    </a>
+    <a class="menu-item" href="delivery.html" data-page="delivery">
+      <span class="menu-icon">🚗</span>
+      <span class="menu-label">Delivery</span>
+    </a>
+    <a class="menu-item" href="track.html" data-page="track">
+      <span class="menu-icon">📍</span>
+      <span class="menu-label">Track Orders</span>
+    </a>
+  </div>
+
+  <!-- Staff & Admin Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">👔 Staff</h3>
+    <a class="menu-item" href="users.html" data-page="users">
+      <span class="menu-icon">👨‍💼</span>
+      <span class="menu-label">Users & Roles</span>
+    </a>
+    <a class="menu-item" href="attendance.html" data-page="attendance">
+      <span class="menu-icon">✅</span>
+      <span class="menu-label">Attendance</span>
+      <span class="menu-badge" id="absentBadge" style="display:none;"></span>
+    </a>
+  </div>
+
+  <!-- Admin Only Section -->
+  <div class="menu-section admin-section" id="adminSection">
+    <h3 class="menu-section-title">🔐 Admin</h3>
+    <a class="menu-item" href="branches.html" data-page="branches">
+      <span class="menu-icon">🏢</span>
+      <span class="menu-label">Branches</span>
+    </a>
+    <a class="menu-item" href="warehouses.html" data-page="warehouses">
+      <span class="menu-icon">🏭</span>
+      <span class="menu-label">Warehouses</span>
+    </a>
+    <a class="menu-item" href="reports.html" data-page="reports">
+      <span class="menu-icon">📈</span>
+      <span class="menu-label">Reports</span>
+    </a>
+    <a class="menu-item" href="ai-center.html" data-page="ai-center">
+      <span class="menu-icon">🤖</span>
+      <span class="menu-label">AI Center</span>
+    </a>
+    <a class="menu-item" href="settings.html" data-page="settings">
+      <span class="menu-icon">⚙️</span>
+      <span class="menu-label">Settings</span>
+    </a>
+  </div>
+
+  <!-- Messages Section -->
+  <div class="menu-section">
+    <h3 class="menu-section-title">💬 Messages</h3>
+    <a class="menu-item" href="messages.html#notifications" data-page="notifications">
+      <span class="menu-icon">🔔</span>
+      <span class="menu-label">Notifications</span>
+      <span class="menu-badge" id="notificationsBadge" style="display:none;"></span>
+    </a>
+    <a class="menu-item" href="messages.html" data-page="messages">
+      <span class="menu-icon">💬</span>
+      <span class="menu-label">Messages</span>
+      <span class="menu-badge" id="messagesBadge" style="display:none;"></span>
+    </a>
+  </div>
+
+  <!-- Bottom Section -->
+  <div class="menu-bottom">
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="topbar">
+<h3>Enterprise Dashboard</h3>
+<div class="topbar-right">
+<select id="branchSelect"></select>
+<div id="userBadge">👤 Admin</div>
+</div>
+</div>
+
+<div class="content">
+
+<!-- SUMMARY CARDS -->
+<div class="cards">
+<div class="card"><h3>Total Products</h3><p id="totalProducts">0</p></div>
+<div class="card"><h3>Total Units</h3><p id="totalUnits">0</p></div>
+<div class="card"><h3>Low Stock Items</h3><p id="lowStock">0</p></div>
+<div class="card"><h3>Out of Stock</h3><p id="outOfStock">0</p></div>
+<div class="card" id="healthCard" data-roles="admin,manager,supervisor"><h3>Inventory Health Score</h3><p id="healthScore">0%</p></div>
+<div class="card" data-roles="admin,manager,supervisor"><h3>Suppliers</h3><p id="totalSuppliers">0</p></div>
+<div class="card"><h3>Customers</h3><p id="totalCustomers">0</p></div>
+<div class="card" data-roles="admin,manager,supervisor"><h3>Open Purchase Orders</h3><p id="openPOs">0</p></div>
+<div class="card" data-roles="admin,manager,supervisor"><h3>Total Revenue</h3><p id="revenue">KES 0</p></div>
+</div>
+
+<!-- SALES CHART -->
+<div class="section" data-roles="admin,manager,supervisor">
+<h3>Sales Overview (Units Sold per Product)</h3>
+<canvas id="salesChart"></canvas>
+</div>
+
+<!-- ATTENDANCE -->
+<div class="section" id="attendanceSection">
+<h3>My Attendance</h3>
+<div class="attendance-row">
+<div class="attendance-status" id="attendanceStatus">Checking attendance status...</div>
+</div>
+<div class="attendance-actions">
+<button onclick="clockIn()">Clock In</button>
+<button onclick="clockOut()">Clock Out</button>
+</div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="section" data-roles="admin,manager,supervisor,staff,cashier,storekeeper">
+<h3>AI Assistant</h3>
+<textarea id="aiInput" placeholder="Ask: stock, revenue, customers, sales..."></textarea>
+<button onclick="aiSummarize()">Ask AI</button>
+<div id="aiOutput"></div>
+</div>
+
+<div class="section" data-roles="admin,manager,supervisor,staff,cashier,storekeeper">
+<h3>AI Super Assistant</h3>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+<button onclick="nav('ai-center.html')">Open AI Command Center</button>
+<button onclick="openAIHelper()">Open AI Helper</button>
+</div>
+</div>
+
+<!-- TRANSACTIONS HISTORY -->
+<div class="section">
+<h3>Recent Transactions</h3>
+<table id="historyTable">
+<tr><th>Date</th><th>Product</th><th>Type</th><th>Quantity</th></tr>
+</table>
+</div>
+
+</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+// Hamburger Menu JavaScript
+// Global menu state
+let menuOpen = false;
+
+function toggleMenu() {
+  if (menuOpen) {
+    closeMenu();
+  } else {
+    openMenu();
+  }
+}
+
+function openMenu() {
+  menuOpen = true;
+  document.getElementById('hamburgerBtn').classList.add('active');
+  document.getElementById('sidebarMenu').classList.add('active');
+  document.getElementById('menuOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMenu() {
+  menuOpen = false;
+  document.getElementById('hamburgerBtn').classList.remove('active');
+  document.getElementById('sidebarMenu').classList.remove('active');
+  document.getElementById('menuOverlay').classList.remove('active');
+  document.body.style.overflow = 'auto';
+}
+
+// Close menu when clicking on a menu item
+document.addEventListener('DOMContentLoaded', function() {
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(item => {
+    item.addEventListener('click', closeMenu);
+  });
+
+  // Load user info and notifications
+  loadUserInfo();
+  loadNotifications();
+  
+  // Refresh notifications every 30 seconds
+  setInterval(loadNotifications, 30000);
+});
+
+// Load user information from token
+async function loadUserInfo() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    document.getElementById('userName').textContent = payload.name || 'User';
+    document.getElementById('userRole').textContent = (payload.role || 'user').toUpperCase();
+
+    // Show admin section only for admins
+    if (payload.role === 'admin') {
+      document.getElementById('adminSection').classList.add('visible');
+    }
+
+    // Mark current page as active
+    const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
+    const activePage = currentPage === 'messages' && window.location.hash === '#notifications'
+      ? 'notifications'
+      : currentPage;
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+      const page = item.getAttribute('data-page');
+      if (page === activePage || (!activePage && page === 'dashboard')) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  } catch (err) {
+    console.error('Error loading user info:', err);
+  }
+}
+
+// Load and display notifications/badges with real data
+async function loadNotifications() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+   const BASE_URL = "https://strategicminds-nnfe.onrender.com";
+
+const response = await fetch(`${BASE_URL}/api/dashboard/summary`, {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    // Update badges with real data
+    updateBadge('lowStockBadge', data.lowStock);
+    updateBadge('pendingOrdersBadge', data.pendingOrders);
+    updateBadge('feedbackBadge', data.unresolvedFeedback);
+    updateBadge('requestsBadge', data.openRequests);
+    updateBadge('notificationsBadge', data.unreadNotifications);
+    updateBadge('messagesBadge', data.unreadMessages);
+    updateBadge('absentBadge', data.absentToday);
+  } catch (err) {
+    console.error('Error loading notifications:', err);
+  }
+}
+
+// Helper function to update badge display
+function updateBadge(elementId, count) {
+  const badge = document.getElementById(elementId);
+  if (!badge) return;
+
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'block';
+    badge.classList.remove('hidden-badge');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Logout function
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = 'index.html';
+}
+
+// Close menu on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && menuOpen) {
+    closeMenu();
+  }
+});
+
+// Dashboard JavaScript
+const currentUser = applyUserContext(["admin","manager","staff","cashier","supervisor","storekeeper"]);
+applyRoleVisibility(currentUser ? currentUser.role : "");
+initBranchSelector();
+window.onBranchChange = () => loadDashboard();
+
+let products = [];
+let suppliers = [];
+let customers = [];
+let sales = [];
+let movements = [];
+let saleItems = [];
+let purchaseOrders = [];
+let lowStockCount = 0;
+let outOfStockCount = 0;
+let openPOCount = 0;
+let totalRevenue = 0;
+let attendanceRecord = null;
+let dashboardSettings = {};
+
+async function loadDashboard(){
+    try{
+        const [prodRes, supRes, custRes, salesRes, movRes, itemsRes, poRes, settingsRes] = await Promise.all([
+            apiFetch(withBranch("/api/products", { limit: 400 })),
+            apiFetch(`${BASE_URL}/api/suppliers`),
+            apiFetch(`${BASE_URL}/api/customers?limit=400`),
+            apiFetch(withBranch("/api/sales", { limit: 400 })),
+            apiFetch(withBranch("/api/movements", { limit: 400 })),
+            apiFetch(withBranch("/api/sale-items", { limit: 400 })),
+            apiFetch(withBranch("/api/purchase-orders", { limit: 400 })),
+            apiFetch(getActiveBranchParam() 
+                ? `${BASE_URL}/api/settings?branch_id=${getActiveBranchParam()}`
+                : `${BASE_URL}/api/settings`)
+        ]);
+
+        products = await prodRes.json();
+        suppliers = await supRes.json();
+        customers = await custRes.json();
+        sales = await salesRes.json();
+        movements = await movRes.json();
+        saleItems = await itemsRes.json();
+        purchaseOrders = await poRes.json();
+        dashboardSettings = await settingsRes.json();
+
+        renderCards();
+        renderHistory();
+        renderChart();
+        loadAttendanceStatus();
+    }catch(err){
+        console.error(err);
+        alert("Failed to load dashboard data");
+    }
+}
+
+const BASE_URL = "https://strategicminds-nnfe.onrender.com";
+
+function withBranch(path, params = {}) {
+    const param = getActiveBranchParam();
+    const search = new URLSearchParams(params || {});
+    if(param) search.set("branch_id", param);
+    const qs = search.toString();
+    return qs ? `${BASE_URL}${path}?${qs}` : `${BASE_URL}${path}`;
+}
+
+function applyRoleVisibility(role){
+    document.querySelectorAll("[data-roles]").forEach(el=>{
+        const roles = el.getAttribute("data-roles").split(",");
+        if(!roles.includes(role)) el.style.display = "none";
+    });
+}
+
+function renderCards(){
+    document.getElementById("totalProducts").innerText = products.length;
+    const totalUnits = products.reduce((sum,p)=>sum + (Number(p.quantity)||0),0);
+    document.getElementById("totalUnits").innerText = totalUnits;
+    document.getElementById("totalSuppliers").innerText = suppliers.length;
+    document.getElementById("totalCustomers").innerText = customers.length;
+
+    lowStockCount = products.filter(p=>{
+        const reorder = Number.isFinite(Number(p.reorder_level)) ? Number(p.reorder_level) : 10;
+        return (p.quantity||0) <= reorder;
+    }).length;
+    document.getElementById("lowStock").innerHTML = lowStockCount>0? `<span class="alert">${lowStockCount}</span>`:0;
+
+    outOfStockCount = products.filter(p=>(Number(p.quantity)||0) <= 0).length;
+    document.getElementById("outOfStock").innerText = outOfStockCount;
+
+    const healthCard = document.getElementById("healthCard");
+    if(healthCard && dashboardSettings && dashboardSettings.inventory_health_enabled){
+        const total = products.length || 0;
+        const score = total ? Math.max(0, Math.round(100 - ((lowStockCount + outOfStockCount) / total) * 100)) : 100;
+        document.getElementById("healthScore").innerText = `${score}%`;
+        healthCard.style.display = "";
+    }else if(healthCard){
+        healthCard.style.display = "none";
+    }
+
+    openPOCount = purchaseOrders.filter(po=>po.status === "Pending").length;
+    document.getElementById("openPOs").innerText = openPOCount;
+
+    totalRevenue = sales.reduce((sum,s)=>sum+(s.total||0),0);
+    document.getElementById("revenue").innerText = formatKES(totalRevenue);
+}
+
+function renderHistory(){
+    const table = document.getElementById("historyTable");
+    table.innerHTML = `<tr><th>Date</th><th>Product</th><th>Type</th><th>Quantity</th></tr>`;
+    if(movements.length===0){
+        table.innerHTML += `<tr><td colspan="4" class="empty">No transactions yet</td></tr>`;
+        return;
+    }
+    movements.slice(0,8).forEach(m=>{
+        table.innerHTML += `<tr><td>${m.created_at||"-"}</td><td>${m.product_name||"-"}</td><td>${m.type||"-"}</td><td>${m.qty||0}</td></tr>`;
+    });
+}
+
+function renderChart(){
+    const ctx = document.getElementById("salesChart");
+    if(saleItems.length>0){
+        const productMap = {};
+        saleItems.forEach(s=>{if(!productMap[s.product_name]) productMap[s.product_name]=0; productMap[s.product_name]+= s.qty || 0;});
+        new Chart(ctx,{
+            type:'bar',
+            data:{
+                labels:Object.keys(productMap),
+                datasets:[{
+                    label:'Units Sold',
+                    data:Object.values(productMap),
+                    backgroundColor:'#2c5364'
+                }]
+            },
+            options:{
+                responsive:true,
+                plugins:{legend:{display:false}},
+                scales:{y:{beginAtZero:true}}
+            }
+        });
+    }else{
+        ctx.parentElement.innerHTML += "<p>No sales data available</p>";
+    }
+}
+
+async function loadAttendanceStatus(){
+    try{
+        const res = await apiFetch("/api/attendance/today");
+        attendanceRecord = await res.json();
+    }catch(e){
+        attendanceRecord = null;
+    }
+    renderAttendanceStatus();
+}
+
+function renderAttendanceStatus(){
+    const el = document.getElementById("attendanceStatus");
+    if(!el) return;
+    if(!attendanceRecord){
+        el.innerText = "Not clocked in today.";
+        return;
+    }
+    const inTime = attendanceRecord.clock_in ? new Date(attendanceRecord.clock_in).toLocaleTimeString() : "-";
+    const outTime = attendanceRecord.clock_out ? new Date(attendanceRecord.clock_out).toLocaleTimeString() : "—";
+    const hours = attendanceRecord.total_hours ? `${Number(attendanceRecord.total_hours).toFixed(2)} hrs` : "—";
+    const status = attendanceRecord.status ? ` (${attendanceRecord.status})` : "";
+    el.innerText = `Clock-in: ${inTime} • Clock-out: ${outTime} • Hours: ${hours}${status}`;
+}
+
+async function clockIn(){
+    const branchId = getActiveBranchId();
+    if(!branchId){
+        alert("Select a branch before clocking in.");
+        return;
+    }
+    const res = await apiFetch("/api/attendance/clock-in", {
+        method: "POST",
+        body: JSON.stringify({ branch_id: branchId })
+    });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Clock-in failed");
+        return;
+    }
+    await loadAttendanceStatus();
+}
+
+async function clockOut(){
+    const res = await apiFetch("/api/attendance/clock-out", { method: "POST" });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "Clock-out failed");
+        return;
+    }
+    await loadAttendanceStatus();
+}
+
+// ===== AI ASSISTANT =====
+async function aiSummarize(){
+    const query = document.getElementById("aiInput").value.trim();
+    if(!query){
+        alert("Type a question first.");
+        return;
+    }
+    const branchParam = getActiveBranchParam();
+    const path = branchParam ? `/api/ai/query?branch_id=${branchParam}` : "/api/ai/query";
+    const res = await apiFetch(path, { method: "POST", body: JSON.stringify({ query }) });
+    const data = await res.json();
+    if(!res.ok){
+        alert(data.error || "AI request failed");
+        return;
+    }
+    document.getElementById("aiOutput").innerText = data.response || "No response.";
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>
